@@ -4,6 +4,10 @@
 
 This project will translate midi file (`.mid`) into `Note`  and `Control` object, and can be used in other purposes.
 
+## Requirement
+
+Python library `mido`, `matplotlib`, `soundfile`, `pyroomacoustics` will be required.
+
 ## Demo
 
 ### Translate
@@ -42,7 +46,7 @@ Notes object extracted from `mt.notes` with format:
 {
     <channel_0>: [Note_00, Note_01...],
     <channel_1>: [Note_10...],
-	...
+    ...
 }
 ```
 
@@ -62,7 +66,7 @@ Controls object extracted from `mt.controls` with format:
 {
     <channel_0>: [Control_00, Control_01...],
     <channel_1>: [Control_10...],
-	...
+    ...
 }
 ```
 
@@ -112,7 +116,9 @@ synthesize(<path.mid>, <out_path.wav>)
 
 Some parameters could be changed for advanced functions.
 
+* `self.sample_rate`, change the audio sample rate;
 * `self.high_velocity_type`, `triangle` or `square` for different sound;
 * `self.piano_sound`, if `False`, it switch to `long note` style;
 * `self.piano_sustain`, if `True`, sustain pedal will be added;
 * `self.reverb_add`, if `True`, reverberate effect will be add;
+
