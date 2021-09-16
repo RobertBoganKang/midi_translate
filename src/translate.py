@@ -68,7 +68,7 @@ class MidiTranslate(object):
         self.piano_key_color = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0]
         self.default_color = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
                               '#bcbd22', '#17becf', 'b', 'g', 'r', 'c', 'm', 'y', 'k']
-        self.sustain_padel_tolerance_duration = 0.15
+        self.sustain_pedal_tolerance_duration = 0.15
 
         self.initialize()
         self.translate()
@@ -105,6 +105,10 @@ class MidiTranslate(object):
         channel = self.get_value_from_msg_by_key(msg, 'channel')
         note = self.get_value_from_msg_by_key(msg, 'note')
         velocity = self.get_value_from_msg_by_key(msg, 'velocity')
+        # note_on as note_off operation if velocity is 0
+        if velocity == 0:
+            self.note_off_operation(msg, tick)
+            return
         # if channel not exist, get channel
         if channel not in self.note_recipe:
             self.note_recipe[channel] = {}
@@ -210,7 +214,7 @@ class MidiTranslate(object):
                     ctrl_value = ctrl.value
                     ctrl_control = ctrl.control
                     if ctrl_control == 64 and ctrl_value > 0 and (
-                            ctrl_start - self.sustain_padel_tolerance_duration < note_end < ctrl_end):
+                            ctrl_start - self.sustain_pedal_tolerance_duration < note_end < ctrl_end):
                         self.notes[ch][i].end = max(note_end, ctrl_end)
                         self.notes[ch][i].update()
                         break
@@ -243,12 +247,12 @@ class MidiTranslate(object):
         self.update_time(self.notes)
         self.update_time(self.controls)
 
-    def plot_pianoroll(self, start_time=None, end_time=None):
+    def pianoroll(self, start_time=None, end_time=None):
         import matplotlib.pyplot as plt
-
-        # initial translate
+        # check
         if not self.notes:
-            self.translate()
+            print('WARNINT: empty track, cannot plot!')
+            return
         # 0. fix x-axis range
         if start_time is None:
             start_time = 0
@@ -325,7 +329,7 @@ if __name__ == '__main__':
 
     mt = MidiTranslate(sys.argv[1])
     # plot piano-roll
-    mt.plot_pianoroll()
+    mt.pianoroll()
     # test translate
     res_notes, res_controls = mt.notes, mt.controls
     # notes
