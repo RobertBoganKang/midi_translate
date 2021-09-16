@@ -38,7 +38,7 @@ mt = MidiTranslate(<path.mid>)
 
 Notes object extracted from `mt.notes` with format:
 
-```json
+```python
 {
     <channel_0>: [Note_00, Note_01...],
     <channel_1>: [Note_10...],
@@ -58,7 +58,7 @@ Note parameters:
 
 Controls object extracted from `mt.controls` with format:
 
-```json
+```python
 {
     <channel_0>: [Control_00, Control_01...],
     <channel_1>: [Control_10...],
