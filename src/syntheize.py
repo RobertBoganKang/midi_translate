@@ -3,6 +3,7 @@ import random
 import numpy as np
 import soundfile as sf
 
+# https://github.com/RobertBoganKang/midi_translate
 from translate import MidiTranslate
 
 
