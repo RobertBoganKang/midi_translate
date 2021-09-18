@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     synth_group = parser.add_argument_group('synthesize arguments')
     synth_group.add_argument('--sample_rate', '-sr', type=int, help='sample rate to process', default=48000)
-    synth_group.add_argument('--reverb', '-rvb', action='store_false', help='apply reverb')
+    synth_group.add_argument('--reverb_off', '-ro', action='store_false', help='do not add reverb')
     synth_group.add_argument('--long_notes', '-ln', action='store_true', help='use long note style')
     synth_group.add_argument('--sound_type', '-s', type=str, help='sound type `triangle` or `square`',
                              default='triangle')
