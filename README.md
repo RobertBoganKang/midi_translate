@@ -108,7 +108,7 @@ s = Synthesize()
 
 The program will synthesize midi files (`.mid` to `.wav`):
 
-```pyt
+```python
 synthesize(<path.mid>, <out_path.wav>)
 ```
 
@@ -121,4 +121,12 @@ Some parameters could be changed for advanced functions.
 * `self.piano_sound`, if `False`, it switch to `long note` style;
 * `self.piano_sustain`, if `True`, sustain pedal will be added;
 * `self.reverb_add`, if `True`, reverberate effect will be add;
+
+### File `batch_synth.py`
+
+Apply `synthesize.py` in batch way.
+
+```bash
+python3 batch_synth.py -i <in_folder> -o <out_folder>
+```
 
