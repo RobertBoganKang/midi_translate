@@ -12,7 +12,7 @@ class ReverbExample(object):
 
     def __init__(self):
         # reverb simulation
-        self.plot_room = True
+        self.plot_room = False
         self.room_size = (12, 16)
         self.source_y = 13
         self.source_width = 0.3
@@ -53,7 +53,7 @@ class Synthesize(object):
     refer to `KONTAKT` virtual instrument making method
     """
 
-    def __init__(self):
+    def __init__(self, prepare_sound=True):
         self.a4_frequency = 440
         self.max_note_duration = 10
         self.sample_rate = 48000
@@ -96,13 +96,17 @@ class Synthesize(object):
         self.unison_strings = {}
         self.sample_heading = None
         self.sample_fix_ending = None
+        self.rvb = None
 
-        self.initialize()
+        if prepare_sound:
+            self.prepare_sound_library()
 
-    def initialize(self):
+    def prepare_sound_library(self):
         self.get_unison_string_info()
         self.build_sound_library()
         self.build_fix_caps()
+        if self.reverb_add:
+            self.rvb = ReverbExample()
 
     def key_to_frequency(self, key, random_shift=0):
         return self.a4_frequency * 2 ** ((key - 49) / 12 + random_shift / 1200)
@@ -311,8 +315,7 @@ class Synthesize(object):
                 synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
         # apply reverb
         if self.reverb_add:
-            rvb = ReverbExample()
-            synthesized_audio = rvb.apply(synthesized_audio, self.sample_rate)
+            synthesized_audio = self.rvb.apply(synthesized_audio, self.sample_rate)
         # norm audio
         synthesized_audio = self.norm_audio(synthesized_audio)
         # export
