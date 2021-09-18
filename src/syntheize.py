@@ -11,7 +11,6 @@ class ReverbExample(object):
     """ reverb simulation (example) """
 
     def __init__(self):
-        # reverb simulation
         self.plot_room = False
         self.room_size = (12, 16)
         self.source_y = 13
@@ -54,9 +53,10 @@ class Synthesize(object):
     """
 
     def __init__(self, prepare_sound=True):
+        # sound library
         self.a4_frequency = 440
-        self.max_note_duration = 10
         self.sample_rate = 48000
+        self.max_note_duration = 10
 
         # define heading/ending caps
         self.sample_heading_time = 0.006
@@ -98,10 +98,13 @@ class Synthesize(object):
         self.sample_fix_ending = None
         self.rvb = None
 
+        # if False, prepare it manually
+        # usage: could change parameters before sound libs preparation
         if prepare_sound:
             self.prepare_sound_library()
 
     def prepare_sound_library(self):
+        """ prepare sound library (all samples) """
         self.get_unison_string_info()
         self.build_sound_library()
         self.build_fix_caps()
