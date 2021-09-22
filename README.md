@@ -20,7 +20,7 @@ python translate.py <path.mid>
 
 ### Synthesize
 
-Synthesize midi file into synthesized performance (`piano` or `long note` style).
+Synthesize midi file into synthesized performance.
 
 ```bash
 python synthesize.py <path.mid> <out_path.wav>
@@ -117,10 +117,22 @@ synthesize(<path.mid>, <out_path.wav>)
 Some parameters could be changed for advanced functions.
 
 * `self.sample_rate`, change the audio sample rate;
-* `self.high_velocity_type`, `triangle` or `square` for different sound;
-* `self.piano_sound`, if `False`, it switch to `long note` style;
 * `self.piano_sustain`, if `True`, sustain pedal will be added;
 * `self.reverb_add`, if `True`, reverberate effect will be add;
+
+#### Sound Library Change
+
+```python
+from sound_library.<your_sound_library> import SoundLibrary
+```
+
+Choose one sound library `<your_sound_library>`, then the sound will change.
+
+There are several sound could choose:
+
+* long notes;
+* piano style 0;
+* piano style 1;
 
 ### File `batch_synth.py`
 
