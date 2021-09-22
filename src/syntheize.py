@@ -1,7 +1,7 @@
 import numpy as np
 import soundfile as sf
 
-from sound_library.piano_0 import SoundLibrary
+from sound_library.piano_1 import SoundLibrary
 from sound_library.utils import ReverbExample, SoundCommon
 # https://github.com/RobertBoganKang/midi_translate
 from translate import MidiTranslate
@@ -9,9 +9,7 @@ from translate import MidiTranslate
 
 class Synthesize(SoundCommon):
     """
-    synthesize midi with virtual piano sound (for demo)
-        * velocity: low -> high
-        * sound wave: sine -> triangle/square
+    synthesize midi with virtual sound (for demo)
     refer to `KONTAKT` virtual instrument making method
     """
 
