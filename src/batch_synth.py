@@ -16,8 +16,6 @@ class BatchSynthesize(FileProcessing):
         super().__init__(ops)
         self.sample_rate = ops.sample_rate
         self.reverb = ops.reverb
-        self.sound_type = ops.sound_type
-        self.long_notes = ops.long_notes
         self.synth = Synthesize(prepare_sound=False)
 
         self.change_part_synth_param()
@@ -25,9 +23,6 @@ class BatchSynthesize(FileProcessing):
     def change_part_synth_param(self):
         self.synth.sample_rate = self.sample_rate
         self.synth.reverb_add = self.reverb
-        self.synth.high_velocity_type = self.sound_type
-        if self.long_notes:
-            self.synth.piano_sound = False
         self.synth.prepare_sound_library()
 
     def do(self, in_path, out_path):
@@ -49,9 +44,6 @@ if __name__ == '__main__':
     synth_group = parser.add_argument_group('synthesize arguments')
     synth_group.add_argument('--sample_rate', '-sr', type=int, help='sample rate to process', default=48000)
     synth_group.add_argument('--reverb_off', '-ro', action='store_false', help='do not add reverb')
-    synth_group.add_argument('--long_notes', '-ln', action='store_true', help='use long note style')
-    synth_group.add_argument('--sound_type', '-s', type=str, help='sound type `triangle` or `square`',
-                             default='triangle')
 
     args = parser.parse_args()
 
