@@ -21,8 +21,8 @@ class SoundLibrary(SoundCommon):
         self.piano_max_ending_sample_pre_time = 0.1
 
         # piano sound
-        self.piano_final_energy = 0.01
-        self.piano_volume_decay_param = 0.8
+        self.piano_final_energy = 0.015
+        self.piano_volume_decay_param = 0.7
         self.piano_overtone_decay_param = 0.1
         self.piano_hard_sound_power_param = 0.7
         self.piano_warping_power_param = 3
