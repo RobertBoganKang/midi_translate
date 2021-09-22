@@ -44,6 +44,38 @@ class ReverbExample(object):
         return sim_audio
 
 
+class SpatialModeling(object):
+    def __init__(self):
+        self.mic_source_distance = 0.4
+        self.source_width = 1.2
+        self.mic_distance = 0.3
+
+        # for sound speed
+        self.environment_temperature = 20
+
+    def calculate_sound_speed(self):
+        """ sound speed will change by temperature """
+        return 331 * (1 + self.environment_temperature / 273) ** (1 / 2)
+
+    def spatial_key_to_x(self, key):
+        return (key - 44) / 88 * self.source_width / 2
+
+    def get_parameter(self, key):
+        source_x = self.spatial_key_to_x(key)
+        left_mic_x = -self.mic_distance / 2
+        right_mic_x = self.mic_distance / 2
+        mic_y = self.mic_source_distance
+        left_source_mic_distance = np.sqrt(np.power(source_x - left_mic_x, 2) + np.power(mic_y, 2))
+        right_source_mic_distance = np.sqrt(np.power(source_x - right_mic_x, 2) + np.power(mic_y, 2))
+        sound_speed = self.calculate_sound_speed()
+        delta_time = (left_source_mic_distance - right_source_mic_distance) / sound_speed
+        if left_source_mic_distance < right_source_mic_distance:
+            sound_power_ratio = [1, np.power(left_source_mic_distance / right_source_mic_distance, 2)]
+        else:
+            sound_power_ratio = [np.power(right_source_mic_distance / left_source_mic_distance, 2), 1]
+        return delta_time, sound_power_ratio
+
+
 class Synthesize(object):
     """
     synthesize midi with virtual piano sound (for demo)
@@ -77,10 +109,7 @@ class Synthesize(object):
         self.piano_overtone_decay_param = 0.03
         self.piano_hard_sound_power_param = 0.65
         # spatial modeling
-        self.mic_piano_distance = 0.4
-        self.piano_width = 1.2
-        self.environment_temperature = 20
-        self.mic_distance = 0.3
+        self.spatial_modeling = SpatialModeling()
 
         # bad temperment variations
         self.random_temperment = 0.5
@@ -177,28 +206,6 @@ class Synthesize(object):
             raise ValueError('ERROR: high velocity type unknown!')
         return audio
 
-    def calculate_sound_speed(self):
-        """ sound speed will change by temperature """
-        return 331 * (1 + self.environment_temperature / 273) ** (1 / 2)
-
-    def spatial_key_to_x(self, key):
-        return (key - 44) / 88 * self.piano_width / 2
-
-    def spatial_modeling(self, key):
-        source_x = self.spatial_key_to_x(key)
-        left_mic_x = -self.mic_distance / 2
-        right_mic_x = self.mic_distance / 2
-        mic_y = self.mic_piano_distance
-        left_source_mic_distance = np.sqrt(np.power(source_x - left_mic_x, 2) + np.power(mic_y, 2))
-        right_source_mic_distance = np.sqrt(np.power(source_x - right_mic_x, 2) + np.power(mic_y, 2))
-        sound_speed = self.calculate_sound_speed()
-        delta_time = (left_source_mic_distance - right_source_mic_distance) / sound_speed
-        if left_source_mic_distance < right_source_mic_distance:
-            sound_power_ratio = [1, np.power(left_source_mic_distance / right_source_mic_distance, 2)]
-        else:
-            sound_power_ratio = [np.power(right_source_mic_distance / left_source_mic_distance, 2), 1]
-        return delta_time, sound_power_ratio
-
     def get_start_idx(self):
         return int(random.uniform(0, self.random_sample_shift * self.sample_rate))
 
@@ -258,7 +265,7 @@ class Synthesize(object):
         sample_length = int(round(note_duration * self.sample_rate) + len(sample_ending)
                             - self.piano_max_ending_sample_pre_time)
         sample_length = max(sample_length, len(self.sample_heading) + len(sample_ending))
-        delta_time, sound_power_ratio = self.spatial_modeling(key)
+        delta_time, sound_power_ratio = self.spatial_modeling.get_parameter(key)
         left_sample = self.get_sample_piano_single_mic(key, velocity, random_sample_shift_idx, sample_length,
                                                        sample_ending, delta_time, left_mic=True) * sound_power_ratio[0]
         right_sample = self.get_sample_piano_single_mic(key, velocity, random_sample_shift_idx, sample_length,
@@ -288,7 +295,7 @@ class Synthesize(object):
         sample_ending = self.sample_fix_ending
         sample_length = int(round(note_duration * self.sample_rate))
         sample_length = max(sample_length, len(self.sample_heading) + len(sample_ending))
-        delta_time, sound_power_ratio = self.spatial_modeling(key)
+        delta_time, sound_power_ratio = self.spatial_modeling.get_parameter(key)
         left_sample = self.get_sample_single_mic(key, velocity, random_sample_shift_idx, sample_length,
                                                  sample_ending, delta_time, left_mic=True) * sound_power_ratio[0]
         right_sample = self.get_sample_single_mic(key, velocity, random_sample_shift_idx, sample_length,
