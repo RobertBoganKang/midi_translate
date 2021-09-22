@@ -15,7 +15,7 @@ class BatchSynthesize(FileProcessing):
     def __init__(self, ops):
         super().__init__(ops)
         self.sample_rate = ops.sample_rate
-        self.reverb = ops.reverb
+        self.reverb = ops.reverb_off
         self.synth = Synthesize(prepare_sound=False)
 
         self.change_part_synth_param()
