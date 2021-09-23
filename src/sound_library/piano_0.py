@@ -15,7 +15,7 @@ class SoundLibrary(SoundCommon):
     def __init__(self):
         super().__init__()
         # define heading/ending caps
-        self.sample_heading_time = 0.006
+        self.sample_heading_time = 0.004
         self.piano_max_ending_sample_time = 0.3
         self.piano_max_ending_sample_power_param = 20
         self.piano_max_ending_sample_pre_time = 0.2
