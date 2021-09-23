@@ -23,7 +23,7 @@ class SoundLibrary(SoundCommon):
         # piano sound
         self.piano_final_energy = 0.015
         self.piano_volume_decay_param = 0.7
-        self.piano_overtone_decay_param = 0.12
+        self.piano_overtone_decay_param = 0.08
         self.piano_hard_sound_power_param = 0.7
         self.piano_warping_power_param = 3
         self.piano_max_f0_volume = 0.39
