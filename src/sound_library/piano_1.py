@@ -34,7 +34,7 @@ class SoundLibrary(SoundCommon):
         self.piano_mix_f0_param_1 = 0.006
 
         # bad temperment variations
-        self.random_temperment = 0.5
+        self.random_temperment = 0.1
         self.random_unison = 1.2
 
         # tuning
