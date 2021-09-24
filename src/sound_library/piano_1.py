@@ -15,7 +15,7 @@ class SoundLibrary(SoundCommon):
     def __init__(self):
         super().__init__()
         # define heading/ending caps
-        self.sample_heading_time = 0.004
+        self.sample_heading_time = 0.003
         self.piano_max_ending_sample_time = 0.3
         self.piano_max_ending_sample_power_param = 20
         self.piano_max_ending_sample_pre_time = 0.05
@@ -27,9 +27,9 @@ class SoundLibrary(SoundCommon):
         self.piano_final_energy = 0.02
         self.piano_final_overtone_energy = 0.1
         self.piano_volume_decay_param = 0.7
-        self.piano_overtone_decay_param = 0.1
+        self.piano_overtone_decay_param = 0.15
         self.piano_hard_sound_power_param = 0.7
-        self.piano_max_f0_volume = 0.37
+        self.piano_max_f0_volume = 0.39
         self.piano_mix_f0_param_0 = 0.6
         self.piano_mix_f0_param_1 = 0.006
 
@@ -58,7 +58,7 @@ class SoundLibrary(SoundCommon):
     @staticmethod
     def get_inharmonicity_ratio(key, n):
         # ref: http://www.github.com/RobertBoganKang/piano_tuning
-        # TODO: change ih parameter
+        # TODO: change ih parameter (example: grand piano)
         ih_k = max(1 / 13 * key - 20 / 13, -0.035 * key + 0.3)
         bk = np.exp(ih_k) / 10000
         return n * np.sqrt((1 + bk * n ** 2) / (1 + bk))
