@@ -1,7 +1,6 @@
 import random
 
 import numpy as np
-from scipy.signal import butter, filtfilt
 
 
 class SoundCommon(object):
@@ -42,6 +41,7 @@ class SoundCommon(object):
         return int(random.uniform(0, self.random_sample_shift * self.sample_rate))
 
     def audio_nonlinear_transform(self, arrays, nonlinear):
+        from scipy.signal import butter, filtfilt
         if nonlinear == 0:
             return arrays
         nonlinear_array = (nonlinear + 1) ** ((np.array(arrays) - 1) / 2)

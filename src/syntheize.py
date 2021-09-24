@@ -23,7 +23,7 @@ class Synthesize(SoundCommon):
 
         # switch
         self.reverb_add = True
-        self.nonlinear_add = True
+        self.nonlinear_add = False
 
         # system parameters
         self.rvb = None
