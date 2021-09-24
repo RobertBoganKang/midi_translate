@@ -1,6 +1,7 @@
 import random
 
 import numpy as np
+from scipy.signal import butter, filtfilt
 
 
 class SoundCommon(object):
@@ -11,9 +12,11 @@ class SoundCommon(object):
 
         # parameters
         self.random_sample_shift = 0.01
+        self.nonlinear = 0.06
+        self.highpass_freq = 20
 
-    def key_to_frequency(self, key, random_shift=0):
-        return self.a4_frequency * 2 ** ((key - 49) / 12 + random_shift / 1200)
+    def key_to_frequency(self, key, shift=0):
+        return self.a4_frequency * 2 ** ((key - 49) / 12 + shift / 1200)
 
     @staticmethod
     def norm_audio(audio):
@@ -37,6 +40,22 @@ class SoundCommon(object):
 
     def get_start_idx(self):
         return int(random.uniform(0, self.random_sample_shift * self.sample_rate))
+
+    def audio_nonlinear_transform(self, arrays, nonlinear):
+        if nonlinear == 0:
+            return arrays
+        nonlinear_array = (nonlinear + 1) ** ((np.array(arrays) - 1) / 2)
+        nonlinear_array -= np.mean(nonlinear_array)
+        nonlinear_array = self.norm_audio(nonlinear_array)
+        nyq = self.sample_rate / 2
+        # noinspection PyTupleAssignmentBalance
+        b, a = butter(5, self.highpass_freq / nyq, btype='high', analog=False)
+        # for stereo
+        nonlinear_array = np.transpose(nonlinear_array)
+        nonlinear_array = np.array([filtfilt(b, a, nonlinear_array[i]) for i in range(len(nonlinear_array))])
+        nonlinear_array = np.transpose(nonlinear_array)
+        nonlinear_array = self.norm_audio(nonlinear_array)
+        return nonlinear_array
 
 
 class SpatialModeling(object):

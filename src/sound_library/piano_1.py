@@ -21,21 +21,24 @@ class SoundLibrary(SoundCommon):
         self.piano_max_ending_sample_pre_time = 0.05
 
         # piano sound
-        self.piano_sample_max_overtone = 12
-        self.piano_sample_overtone_power_param = 3
-        self.piano_final_energy = 0.015
-        self.piano_final_overtone_energy = 0.05
+        self.piano_sample_max_overtone = 32
+        self.piano_min_sample_overtone_power_param = 1.6
+        self.piano_sample_overtone_power_base = 1.008
+        self.piano_final_energy = 0.02
+        self.piano_final_overtone_energy = 0.1
         self.piano_volume_decay_param = 0.7
         self.piano_overtone_decay_param = 0.1
         self.piano_hard_sound_power_param = 0.7
-        self.piano_warping_power_param = 2.5
-        self.piano_max_f0_volume = 0.39
+        self.piano_max_f0_volume = 0.37
         self.piano_mix_f0_param_0 = 0.6
         self.piano_mix_f0_param_1 = 0.006
 
         # bad temperment variations
         self.random_temperment = 0.5
-        self.random_unison = 0.7
+        self.random_unison = 1.2
+
+        # tuning
+        self.tuning_param = 0.0004
 
         # system parameters
         self.sound_library_sin_0 = {}
@@ -51,6 +54,18 @@ class SoundLibrary(SoundCommon):
         self.get_unison_string_info()
         self.build_heading_caps()
         self.build_sound_library()
+
+    @staticmethod
+    def get_inharmonicity_ratio(key, n):
+        # ref: http://www.github.com/RobertBoganKang/piano_tuning
+        # TODO: change ih parameter
+        ih_k = max(1 / 13 * key - 20 / 13, -0.035 * key + 0.3)
+        bk = np.exp(ih_k) / 10000
+        return n * np.sqrt((1 + bk * n ** 2) / (1 + bk))
+
+    def get_tuning_shift(self, key):
+        """ simple piano tuning curve """
+        return self.tuning_param * (key - 49) ** 3
 
     def get_unison_string_info(self):
         for key in range(1, 89):
@@ -86,17 +101,26 @@ class SoundLibrary(SoundCommon):
         return sample_ending
 
     def create_sin_sample(self, key, random_shift):
-        f0 = self.key_to_frequency(key, random_shift)
+        tuning_shift = self.get_tuning_shift(key)
+        f0 = self.key_to_frequency(key, random_shift + tuning_shift)
         x = np.arange(0, self.max_note_duration, 1 / self.sample_rate)
         audio = np.cos(f0 * 2 * np.pi * x)
         return audio
 
+    def get_sample_overtone_power_param(self, key):
+        return self.piano_min_sample_overtone_power_param * self.piano_sample_overtone_power_base ** (key - 1)
+
     def create_overtone_sample(self, key, random_shift):
-        f0 = self.key_to_frequency(key, random_shift)
+        tuning_shift = self.get_tuning_shift(key)
+        f0 = self.key_to_frequency(key, random_shift + tuning_shift)
         x = np.arange(0, self.max_note_duration, 1 / self.sample_rate)
+        piano_sample_overtone_power_param = self.get_sample_overtone_power_param(key)
         audio = np.array([0.0] * len(x))
-        for i in range(2, self.piano_sample_max_overtone + 1):
-            audio += (np.cos(i * f0 * 2 * np.pi * x) / (self.piano_sample_overtone_power_param ** (i - 1)))
+        max_overtone = min(int(self.sample_rate / 2 / f0), self.piano_sample_max_overtone)
+        for i in range(2, max_overtone + 1):
+            i_ih = self.get_inharmonicity_ratio(key, i)
+            sine = (np.cos(i_ih * f0 * 2 * np.pi * x) / (piano_sample_overtone_power_param ** (i - 1)))
+            audio += sine
         audio = self.norm_audio(audio)
         return audio
 
@@ -121,9 +145,6 @@ class SoundLibrary(SoundCommon):
 
     def get_sample_single_mic(self, key, velocity, random_sample_shift_idx, sample_length, sample_ending,
                               delta_time, left_mic=True):
-        """
-        ref: https://www.youtube.com/watch?v=ogFAHvYatWs
-        """
         start_idx = self.calculate_start_idx(left_mic, delta_time)
         random_sample_shift_idx += start_idx
         sin_sample_1 = self.sound_library_sin_0[key][
@@ -143,8 +164,7 @@ class SoundLibrary(SoundCommon):
         piano_f0_volume = self.get_piano_f0_mix_curve(key)
         final_decay_volume *= piano_f0_volume
         sample = sin_sample_1 * (1 - final_decay_volume) + sin_sample_2 * final_decay_volume
-        sample = self.piano_mix_f0_param_0 * sample + (1 - self.piano_mix_f0_param_0) * self.apply_power(
-            sample, self.piano_warping_power_param)
+        sample = self.piano_mix_f0_param_0 * sample + (1 - self.piano_mix_f0_param_0) * sample
         # adding caps
         sample[:len(self.sample_heading)] *= self.sample_heading
         sample[-len(sample_ending):] *= sample_ending

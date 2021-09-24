@@ -21,8 +21,9 @@ class Synthesize(SoundCommon):
         self.empty_track_end_buffer_time = 1
         self.min_trim_energy = 1e-5
 
-        # apply reverb
+        # switch
         self.reverb_add = True
+        self.nonlinear_add = True
 
         # system parameters
         self.rvb = None
@@ -65,6 +66,9 @@ class Synthesize(SoundCommon):
                 sample = self.sound_library.get_sample(n.pitch, n.velocity, n.duration)
                 starting_sample = int(round(n.start * self.sample_rate))
                 synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
+        # apply nonlinear
+        if self.nonlinear_add:
+            synthesized_audio = self.audio_nonlinear_transform(synthesized_audio, self.nonlinear)
         # apply reverb
         if self.reverb_add:
             synthesized_audio = self.rvb.apply(synthesized_audio, self.sample_rate)
