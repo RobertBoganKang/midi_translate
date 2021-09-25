@@ -19,6 +19,8 @@ class SoundLibrary(SoundCommon):
         self.piano_max_ending_sample_time = 0.3
         self.piano_max_ending_sample_power_param = 20
         self.piano_max_ending_sample_pre_time = 0.05
+        self.piano_note_struck_volume_ratio = 0.01
+        self.piano_note_release_volume_ratio = 0.06
 
         # piano sound
         self.piano_sample_max_overtone = 32
@@ -34,7 +36,7 @@ class SoundLibrary(SoundCommon):
         self.piano_mix_f0_param_1 = 0.006
 
         # bad temperment variations
-        self.random_temperment = 0.1
+        self.random_temperment = 0.01
         self.random_unison = 1.2
 
         # tuning
@@ -153,17 +155,33 @@ class SoundLibrary(SoundCommon):
                        random_sample_shift_idx:sample_length + random_sample_shift_idx]
         # mix sound
         decay_volume, overtone_decay_volume = self.get_piano_volume_decay(key, velocity, sample_length)
-        final_decay_volume = overtone_decay_volume * np.power(velocity, self.piano_hard_sound_power_param)
+        final_overtone_decay_volume = overtone_decay_volume * np.power(velocity, self.piano_hard_sound_power_param)
         # trim sample
-        valid_sample_length = min(len(final_decay_volume), len(sin_sample_1), len(sin_sample_2))
-        final_decay_volume = final_decay_volume[:valid_sample_length]
+        valid_sample_length = min(len(final_overtone_decay_volume), len(sin_sample_1), len(sin_sample_2))
+        final_overtone_decay_volume = final_overtone_decay_volume[:valid_sample_length]
         sin_sample_1 = sin_sample_1[:valid_sample_length]
         sin_sample_2 = sin_sample_2[:valid_sample_length]
         decay_volume = decay_volume[:valid_sample_length]
         # mix sample
         piano_f0_volume = self.get_piano_f0_mix_curve(key)
-        final_decay_volume *= piano_f0_volume
-        sample = sin_sample_1 * (1 - final_decay_volume) + sin_sample_2 * final_decay_volume
+        final_overtone_decay_volume *= piano_f0_volume
+        # add struck and release overtone
+        struck_head = final_overtone_decay_volume[:len(self.sample_heading)]
+        struck_head_volume = decay_volume[:len(self.sample_heading)]
+        struck_head += np.clip(self.piano_note_struck_volume_ratio * struck_head_volume * self.sample_heading, None, 1)
+        release_head = final_overtone_decay_volume[-len(self.sample_heading) - len(sample_ending):-len(sample_ending)]
+        release_head_volume = decay_volume[-len(self.sample_heading) - len(sample_ending):-len(sample_ending)]
+        release_head += np.clip(self.piano_note_release_volume_ratio * release_head_volume * self.sample_heading, None,
+                                1)
+        struck_end = final_overtone_decay_volume[
+                   len(self.sample_heading):len(self.sample_heading) + len(sample_ending):]
+        struck_end_volume = decay_volume[
+                          len(self.sample_heading):len(self.sample_heading) + len(sample_ending):]
+        struck_end += np.clip(self.piano_note_struck_volume_ratio * struck_end_volume * sample_ending, None, 1)
+        release_end = final_overtone_decay_volume[-len(sample_ending):]
+        release_end_volume = decay_volume[-len(sample_ending):]
+        release_end += np.clip(self.piano_note_release_volume_ratio * release_end_volume * sample_ending, None, 1)
+        sample = sin_sample_1 * (1 - final_overtone_decay_volume) + sin_sample_2 * final_overtone_decay_volume
         sample = self.piano_mix_f0_param_0 * sample + (1 - self.piano_mix_f0_param_0) * sample
         # adding caps
         sample[:len(self.sample_heading)] *= self.sample_heading
