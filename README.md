@@ -6,7 +6,7 @@ This project will translate midi file (`.mid`) into `Note`  and `Control` object
 
 ## Requirement
 
-Python library `mido`, `matplotlib`, `soundfile`, `pyroomacoustics` will be required.
+Python library `mido`, `matplotlib`, `soundfile`, `pyroomacoustics`, `scipy`(optional) will be required.
 
 ## Demo
 
