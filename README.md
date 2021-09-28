@@ -105,13 +105,13 @@ If `export_folder` not given, the program will plot directly.
 Initialize class with:
 
 ```python
-s = Synthesize()
+syn = Synthesize()
 ```
 
 The program will synthesize midi files (`.mid` to `.wav`):
 
 ```python
-synthesize(<path.mid>, <out_path.wav>)
+syn.synthesize(<path.mid>, <out_path.wav>)
 ```
 
 #### Parameters Change
