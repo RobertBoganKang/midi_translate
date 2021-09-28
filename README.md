@@ -91,10 +91,12 @@ mt.apply_sustain_pedal_to_notes()
 Plot piano-roll, the piano roll and tempo will be shown.
 
 ```python
-mt.pianoroll(<start_time>, <end_time>)
+mt.pianoroll(<start_time>, <end_time>, <export_folder>)
 ```
 
 The parameter `start_time` and `end_time` can be none (not given).
+
+If `export_folder` not given, the program will plot directly.
 
 ### File `synthesize.py`
 

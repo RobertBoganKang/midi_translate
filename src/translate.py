@@ -1,3 +1,4 @@
+import os
 import string
 
 import mido
@@ -69,6 +70,7 @@ class MidiTranslate(object):
         self.default_color = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
                               '#bcbd22', '#17becf', 'b', 'g', 'r', 'c', 'm', 'y', 'k']
         self.sustain_pedal_tolerance_duration = 0.15
+        self.pianoroll_figure_size = (16, 4)
 
         self.initialize()
         self.translate()
@@ -247,7 +249,7 @@ class MidiTranslate(object):
         self.update_time(self.notes)
         self.update_time(self.controls)
 
-    def pianoroll(self, start_time=None, end_time=None):
+    def pianoroll(self, start_time=None, end_time=None, export_folder=None):
         import matplotlib.pyplot as plt
         # check
         if not self.notes:
@@ -256,10 +258,18 @@ class MidiTranslate(object):
         # 0. fix x-axis range
         if start_time is None:
             start_time = 0
+        else:
+            start_time = max(start_time, 0)
         if end_time is None:
             end_time = self.music_duration
+        else:
+            end_time = min(end_time, self.music_duration)
+        assert start_time < end_time
 
         # 1. plot notes
+        if export_folder is not None:
+            os.makedirs(export_folder, exist_ok=True)
+        fig = plt.figure(figsize=self.pianoroll_figure_size)
         min_pitch = 1e3
         max_pitch = -1e3
         for ch in self.notes.keys():
@@ -307,10 +317,14 @@ class MidiTranslate(object):
         plt.ylabel('pitch')
         plt.xlim(start_time, end_time)
         plt.ylim(min_pitch - 1, max_pitch + 1)
-        plt.show()
+        if export_folder is not None:
+            fig.savefig(os.path.join(export_folder, 'piano_roll.svg'), bbox_inches='tight')
+        else:
+            plt.show()
         plt.close()
 
         # 2. plot tempo
+        fig = plt.figure(figsize=self.pianoroll_figure_size)
         ss = [self.delta_time_to_bpm(x) for x in self.delta_times]
         xx = []
         for key in range(len(self.delta_times)):
@@ -320,7 +334,10 @@ class MidiTranslate(object):
         plt.ylabel('tempo (bpm)')
         plt.xlim(start_time, end_time)
         plt.grid(True)
-        plt.show()
+        if export_folder is not None:
+            fig.savefig(os.path.join(export_folder, 'tempo.png'), bbox_inches='tight')
+        else:
+            plt.show()
         plt.close()
 
 
