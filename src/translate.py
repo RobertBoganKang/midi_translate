@@ -294,7 +294,7 @@ class MidiTranslate(object):
                 break
             for i in range(len(self.controls[ch][64])):
                 obj = self.controls[ch][64][i]
-                if obj.value != 0 and obj.control_num == 64:
+                if obj.value != 0 and obj.control == 64:
                     start = obj.start
                     end = obj.end
                     # sustain pedal region
@@ -381,10 +381,10 @@ if __name__ == '__main__':
     for control_ch, controls in res_controls.items():
         print(f'--CHANNEL[{control_ch}]--')
         for control_num in controls.keys():
-            print(f'({control_num}):')
+            print(f'<{control_num}>')
             for ii in range(len(controls[control_num])):
                 c = controls[control_num][ii]
-                print(f'CONTROL:{str(c.control_num).rjust(3)}\t'
+                print(f'CONTROL:{str(c.control).rjust(3)}\t'
                       f'VALUE:{str(c.value).rjust(3)}\t'
                       f'START:{round(c.start, 3)}\t'
                       f'END:{round(c.end, 3)}\t'
