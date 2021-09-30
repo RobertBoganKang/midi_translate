@@ -159,22 +159,24 @@ class MidiTranslate(object):
         control_obj = Control(channel=channel, control=control, value=last_value, tick_start=last_tick, tick_end=tick)
         if control_obj.tick_start < control_obj.tick_end and last_channel == channel:
             if channel not in self.controls:
-                self.controls[channel] = [control_obj]
-            else:
-                self.controls[channel].append(control_obj)
+                self.controls[channel] = {}
+            if control not in self.controls[channel]:
+                self.controls[channel][control] = []
+            self.controls[channel][control].append(control_obj)
 
     def add_last_control(self):
         """ add controls for the last """
-        for ch in self.control_recipe.keys():
-            for control, values in self.control_recipe[ch].items():
+        for channel in self.control_recipe.keys():
+            for control, values in self.control_recipe[channel].items():
                 _, tick_start, value = values
-                control_obj = Control(channel=ch, control=control, value=value, tick_start=tick_start,
+                control_obj = Control(channel=channel, control=control, value=value, tick_start=tick_start,
                                       tick_end=self.total_ticks)
                 if control_obj.tick_start < control_obj.tick_end:
-                    if ch not in self.controls:
-                        self.controls[ch] = [control_obj]
-                    else:
-                        self.controls[ch].append(control_obj)
+                    if channel not in self.controls:
+                        self.controls[channel] = {}
+                    if control not in self.controls[channel]:
+                        self.controls[channel][control] = []
+                    self.controls[channel][control].append(control_obj)
 
     def create_tempo_tick_to_second(self):
         tempo_delta_times = []
@@ -190,10 +192,10 @@ class MidiTranslate(object):
         self.delta_times = tempo_delta_times
         self.tick_idx_to_second = np.add.accumulate([0] + tempo_delta_times)
 
-    def update_time(self, class_obj):
-        for ch in class_obj.keys():
-            for i in range(len(class_obj[ch])):
-                obj = class_obj[ch][i]
+    def update_notes_time(self, note_obj):
+        for ch in note_obj.keys():
+            for i in range(len(note_obj[ch])):
+                obj = note_obj[ch][i]
                 tick_start = obj.tick_start
                 tick_end = obj.tick_end
                 start = self.tick_idx_to_second[tick_start]
@@ -201,12 +203,28 @@ class MidiTranslate(object):
                 obj.start = start
                 obj.end = end
                 obj.update()
-            class_obj[ch].sort(key=lambda x: x.start)
+            note_obj[ch].sort(key=lambda x: x.start)
+
+    def update_controls_time(self, control_obj):
+        for ch in control_obj.keys():
+            for ctrl in control_obj[ch].keys():
+                for i in range(len(control_obj[ch][ctrl])):
+                    obj = control_obj[ch][ctrl][i]
+                    tick_start = obj.tick_start
+                    tick_end = obj.tick_end
+                    start = self.tick_idx_to_second[tick_start]
+                    end = self.tick_idx_to_second[tick_end]
+                    obj.start = start
+                    obj.end = end
+                    obj.update()
+                control_obj[ch][ctrl].sort(key=lambda x: x.start)
 
     def apply_sustain_pedal_to_notes(self):
         """ apply sustain pedal to the notes """
         for ch, ch_notes in self.notes.items():
-            ch_control = self.controls[ch]
+            if 64 not in self.controls:
+                break
+            ch_control = self.controls[ch][64]
             for i in range(len(ch_notes)):
                 note = self.notes[ch][i]
                 note_end = note.end
@@ -214,9 +232,7 @@ class MidiTranslate(object):
                     ctrl_start = ctrl.start
                     ctrl_end = ctrl.end
                     ctrl_value = ctrl.value
-                    ctrl_control = ctrl.control
-                    if ctrl_control == 64 and ctrl_value > 0 and (
-                            ctrl_start - self.sustain_pedal_tolerance_duration < note_end < ctrl_end):
+                    if ctrl_value > 0 and (ctrl_start - self.sustain_pedal_tolerance_duration < note_end < ctrl_end):
                         self.notes[ch][i].end = max(note_end, ctrl_end)
                         self.notes[ch][i].update()
                         break
@@ -246,8 +262,8 @@ class MidiTranslate(object):
         self.add_last_control()
         # build tempo index: tick -> time
         self.create_tempo_tick_to_second()
-        self.update_time(self.notes)
-        self.update_time(self.controls)
+        self.update_notes_time(self.notes)
+        self.update_controls_time(self.controls)
 
     def pianoroll(self, start_time=None, end_time=None, export_folder=None):
         import matplotlib.pyplot as plt
@@ -274,9 +290,11 @@ class MidiTranslate(object):
         max_pitch = -1e3
         for ch in self.notes.keys():
             # plot sustain pedal region
-            for key in range(len(self.controls[ch])):
-                obj = self.controls[ch][key]
-                if obj.value != 0 and obj.control == 64:
+            if 64 not in self.controls[ch]:
+                break
+            for i in range(len(self.controls[ch][64])):
+                obj = self.controls[ch][64][i]
+                if obj.value != 0 and obj.control_num == 64:
                     start = obj.start
                     end = obj.end
                     # sustain pedal region
@@ -362,9 +380,12 @@ if __name__ == '__main__':
     print('-' * 80)
     for control_ch, controls in res_controls.items():
         print(f'--CHANNEL[{control_ch}]--')
-        for c in controls:
-            print(f'CONTROL:{str(c.control).rjust(3)}\t'
-                  f'VALUE:{str(c.value).rjust(3)}\t'
-                  f'START:{round(c.start, 3)}\t'
-                  f'END:{round(c.end, 3)}\t'
-                  f'DURATION:{round(c.duration, 3)}')
+        for control_num in controls.keys():
+            print(f'({control_num}):')
+            for ii in range(len(controls[control_num])):
+                c = controls[control_num][ii]
+                print(f'CONTROL:{str(c.control_num).rjust(3)}\t'
+                      f'VALUE:{str(c.value).rjust(3)}\t'
+                      f'START:{round(c.start, 3)}\t'
+                      f'END:{round(c.end, 3)}\t'
+                      f'DURATION:{round(c.duration, 3)}')

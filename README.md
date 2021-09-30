@@ -50,7 +50,7 @@ Notes object extracted from `mt.notes` with format:
 }
 ```
 
-Note parameters:
+`Note` parameters:
 
 * `channel`, midi channel;
 * `pitch`, piano key number format;
@@ -64,13 +64,17 @@ Controls object extracted from `mt.controls` with format:
 
 ```python
 {
-    <channel_0>: [Control_00, Control_01...],
-    <channel_1>: [Control_10...],
+    <channel_0>: {
+        <control_number_0>: {Control_00, ...},
+        <control_number_1>: {Control_10, ...},
+        ...
+    },
+    <channel_1>: {...}
     ...
 }
 ```
 
-Control parameters:
+`Control` parameters:
 
 * `channel`, midi channel;
 * `control`, control function number;
