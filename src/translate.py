@@ -263,20 +263,34 @@ class MidiTranslate(object):
             tick = beat.tick
             beat.time = self.tick_to_second[tick]
 
+    @staticmethod
+    def combine_sustain(sustain_ctrl):
+        """
+        ref: https://www.cnblogs.com/xiximayou/p/12346966.html
+        """
+        intervals = [[x.start, x.end] for x in sustain_ctrl if x.value > 0]
+        res = []
+        intervals.sort()
+        for i in intervals:
+            if not res or res[-1][1] < i[0]:
+                res.append(i)
+            else:
+                res[-1][1] = max(res[-1][1], i[1])
+        return res
+
     def apply_sustain_pedal_to_notes(self):
         """ apply sustain pedal to the notes """
         for ch, ch_notes in self.notes.items():
             if 64 not in self.controls:
                 break
-            ch_control = self.controls[ch][64]
+            ch_control = self.combine_sustain(self.controls[ch][64])
             for i in range(len(ch_notes)):
                 note = self.notes[ch][i]
                 note_end = note.end
                 for ctrl in ch_control:
-                    ctrl_start = ctrl.start
-                    ctrl_end = ctrl.end
-                    ctrl_value = ctrl.value
-                    if ctrl_value > 0 and (ctrl_start - self.sustain_pedal_tolerance_duration < note_end < ctrl_end):
+                    ctrl_start = ctrl[0]
+                    ctrl_end = ctrl[1]
+                    if ctrl_start - self.sustain_pedal_tolerance_duration < note_end < ctrl_end:
                         self.notes[ch][i].end = max(note_end, ctrl_end)
                         self.notes[ch][i].update()
                         break
