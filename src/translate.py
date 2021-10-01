@@ -1,5 +1,4 @@
 import os
-import string
 
 import mido
 import numpy as np
@@ -43,6 +42,16 @@ class Control(object):
         self.ticks = self.tick_end - self.tick_start
 
 
+class Beat(object):
+    def __init__(self, bar=0, beat_in_bar=0, numerator=4, denominator=4, tick=0, time=0):
+        self.bar = bar
+        self.beat_in_bar = beat_in_bar
+        self.numerator = numerator
+        self.denominator = denominator
+        self.tick = tick
+        self.time = time
+
+
 class MidiTranslate(object):
     """
     midi translate:
@@ -54,17 +63,27 @@ class MidiTranslate(object):
 
     def __init__(self, mid_path):
         self.mid_path = mid_path
+        # global params
         self.mid = None
         self.tpb = 0
         self.music_duration = 0
         self.total_ticks = 0
+        self.bar_count = -1
+
+        # program params
         self.note_recipe = {}
-        self.control_recipe = {}
         self.tempo_recipe = []
+        self.control_recipe = {}
+        self.time_signature_recipe = []
         self.delta_times = []
-        self.tick_idx_to_second = []
+        self.tick_to_second = []
+
+        # program result params
         self.notes = {}
         self.controls = {}
+        self.beats = []
+
+        # piano roll params
         self.pianoroll_min_alpha = 0.2
         self.piano_key_color = [0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0]
         self.default_color = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',
@@ -72,6 +91,7 @@ class MidiTranslate(object):
         self.sustain_pedal_tolerance_duration = 0.15
         self.pianoroll_figure_size = (16, 4)
 
+        # do translate
         self.initialize()
         self.translate()
 
@@ -79,6 +99,7 @@ class MidiTranslate(object):
         self.mid = mido.MidiFile(self.mid_path, clip=True)
         self.tpb = self.mid.ticks_per_beat
         self.music_duration = self.mid.length
+        self.time_signature_recipe = [4, 4, 0, self.tpb]
 
     def one_tick_to_delta_time(self, tempo_tpu):
         """
@@ -98,15 +119,10 @@ class MidiTranslate(object):
         """
         return 60 / (delta * self.tpb)
 
-    @staticmethod
-    def get_value_from_msg_by_key(msg, key):
-        return int(msg[msg.rfind(key):].split(' ')[0].split('=')[1].translate(
-            str.maketrans({a: None for a in string.punctuation})))
-
     def note_on_operation(self, msg, tick):
-        channel = self.get_value_from_msg_by_key(msg, 'channel')
-        note = self.get_value_from_msg_by_key(msg, 'note')
-        velocity = self.get_value_from_msg_by_key(msg, 'velocity')
+        channel = msg.channel
+        note = msg.note
+        velocity = msg.velocity
         # note_on as note_off operation if velocity is 0
         if velocity == 0:
             self.note_off_operation(msg, tick)
@@ -121,8 +137,8 @@ class MidiTranslate(object):
             self.note_recipe[channel][note].insert(0, (tick, velocity))
 
     def note_off_operation(self, msg, tick):
-        channel = self.get_value_from_msg_by_key(msg, 'channel')
-        note = self.get_value_from_msg_by_key(msg, 'note')
+        channel = msg.channel
+        note = msg.note
         next_tick = tick
         if note not in self.note_recipe[channel]:
             raise AttributeError('ERROR: midi format error for notes!')
@@ -136,13 +152,13 @@ class MidiTranslate(object):
             self.notes[channel].append(new_note)
 
     def set_tempo_operation(self, msg, tick):
-        tempo = self.get_value_from_msg_by_key(msg, 'tempo')
+        tempo = msg.tempo
         self.tempo_recipe.append((tick, self.one_tick_to_delta_time(tempo)))
 
     def control_change_operation(self, msg, tick):
-        channel = self.get_value_from_msg_by_key(msg, 'channel')
-        control = self.get_value_from_msg_by_key(msg, 'control')
-        value = self.get_value_from_msg_by_key(msg, 'value')
+        channel = msg.channel
+        control = msg.control
+        value = msg.value
         # if channel not exist, get channel
         if channel not in self.control_recipe:
             self.control_recipe[channel] = {}
@@ -178,6 +194,27 @@ class MidiTranslate(object):
                         self.controls[channel][control] = []
                     self.controls[channel][control].append(control_obj)
 
+    def time_signature_operation(self, msg, tick):
+        last_numerator, last_denominator, last_tick, last_tpb = self.time_signature_recipe
+        i = 0
+        for t in range(last_tick, tick, last_tpb):
+            beat_in_bar = i % last_numerator
+            if beat_in_bar == 0:
+                self.bar_count += 1
+            self.beats.append(
+                Beat(bar=self.bar_count, beat_in_bar=beat_in_bar,
+                     numerator=last_numerator, denominator=last_denominator, tick=t))
+            # update
+            i += 1
+        if msg is not None:
+            # put current to recipe
+            numerator = msg.numerator
+            denominator = msg.denominator
+            notated_32nd_notes_per_beat = msg.notated_32nd_notes_per_beat
+            mid_beat_per_bar = int(32 / notated_32nd_notes_per_beat)
+            music_tpb = int(mid_beat_per_bar / denominator * self.tpb)
+            self.time_signature_recipe = [numerator, denominator, tick, music_tpb]
+
     def create_tempo_tick_to_second(self):
         tempo_delta_times = []
         tick = 0
@@ -190,34 +227,41 @@ class MidiTranslate(object):
                 tempo_delta_times.append(self.tempo_recipe[i][1])
                 tick += 1
         self.delta_times = tempo_delta_times
-        self.tick_idx_to_second = np.add.accumulate([0] + tempo_delta_times)
+        self.tick_to_second = np.add.accumulate([0] + tempo_delta_times)
 
-    def update_notes_time(self, note_obj):
+    def update_notes_time(self):
+        note_obj = self.notes
         for ch in note_obj.keys():
             for i in range(len(note_obj[ch])):
                 obj = note_obj[ch][i]
                 tick_start = obj.tick_start
                 tick_end = obj.tick_end
-                start = self.tick_idx_to_second[tick_start]
-                end = self.tick_idx_to_second[tick_end]
+                start = self.tick_to_second[tick_start]
+                end = self.tick_to_second[tick_end]
                 obj.start = start
                 obj.end = end
                 obj.update()
             note_obj[ch].sort(key=lambda x: x.start)
 
-    def update_controls_time(self, control_obj):
+    def update_controls_time(self):
+        control_obj = self.controls
         for ch in control_obj.keys():
             for ctrl in control_obj[ch].keys():
                 for i in range(len(control_obj[ch][ctrl])):
                     obj = control_obj[ch][ctrl][i]
                     tick_start = obj.tick_start
                     tick_end = obj.tick_end
-                    start = self.tick_idx_to_second[tick_start]
-                    end = self.tick_idx_to_second[tick_end]
+                    start = self.tick_to_second[tick_start]
+                    end = self.tick_to_second[tick_end]
                     obj.start = start
                     obj.end = end
                     obj.update()
                 control_obj[ch][ctrl].sort(key=lambda x: x.start)
+
+    def update_beat_time(self):
+        for beat in self.beats:
+            tick = beat.tick
+            beat.time = self.tick_to_second[tick]
 
     def apply_sustain_pedal_to_notes(self):
         """ apply sustain pedal to the notes """
@@ -242,28 +286,32 @@ class MidiTranslate(object):
             track = self.mid.tracks[i]
             current_tick = 0
             for msg in track:
-                msg = str(msg)
-                event_time = self.get_value_from_msg_by_key(msg, 'time')
+                string_msg = str(msg)
+                event_time = msg.time
                 next_tick = current_tick + event_time
                 # notes cases
-                if 'note_on' in msg:
+                if 'note_on' in string_msg:
                     self.note_on_operation(msg, next_tick)
-                elif 'note_off' in msg:
+                elif 'note_off' in string_msg:
                     self.note_off_operation(msg, next_tick)
-                elif 'set_tempo' in msg:
+                elif 'set_tempo' in string_msg:
                     self.set_tempo_operation(msg, next_tick)
-                elif 'control_change' in msg:
+                elif 'control_change' in string_msg:
                     self.control_change_operation(msg, next_tick)
+                elif 'time_signature' in string_msg:
+                    self.time_signature_operation(msg, next_tick)
 
                 # update tick
                 current_tick = next_tick
             self.total_ticks = max(current_tick, self.total_ticks)
-        # add last control
+        # add last status
         self.add_last_control()
+        self.time_signature_operation(None, self.total_ticks)
         # build tempo index: tick -> time
         self.create_tempo_tick_to_second()
-        self.update_notes_time(self.notes)
-        self.update_controls_time(self.controls)
+        self.update_notes_time()
+        self.update_controls_time()
+        self.update_beat_time()
 
     def pianoroll(self, start_time=None, end_time=None, export_folder=None):
         import matplotlib.pyplot as plt
@@ -298,7 +346,7 @@ class MidiTranslate(object):
                     start = obj.start
                     end = obj.end
                     # sustain pedal region
-                    plt.fill([start, end, end, start], [0, 0, 89, 89], facecolor='k', edgecolor='k', alpha=0.1,
+                    plt.fill([start, end, end, start], [0, 0, 89, 89], facecolor='k', alpha=0.1,
                              zorder=2)
             # plot notes lines
             color = self.default_color[ch % len(self.default_color)]
@@ -327,8 +375,16 @@ class MidiTranslate(object):
                          alpha=0.3, facecolor='lightgray', zorder=0)
             # grid line
             plt.plot([0, self.music_duration], [key - 0.5, key - 0.5], c='lightgray', linewidth=0.5, zorder=1)
+        # plot bar and beats
+        for beat in self.beats:
+            if beat.beat_in_bar == 0:
+                alpha = 0.6
+            else:
+                alpha = 0.2
+            plt.plot([beat.time, beat.time], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=1, zorder=1,
+                     alpha=alpha)
         # start end edge
-        plt.plot([0, 0], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=2, zorder=3)
+        plt.plot([0, 0], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=3, zorder=3)
         plt.plot([self.music_duration, self.music_duration], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=3)
         # plot rest
         plt.xlabel('time (second)')
@@ -346,12 +402,22 @@ class MidiTranslate(object):
         ss = [self.delta_time_to_bpm(x) for x in self.delta_times]
         xx = []
         for key in range(len(self.delta_times)):
-            xx.append(self.tick_idx_to_second[key])
+            xx.append(self.tick_to_second[key])
+        # plot bar and beats
+        beat_range = max(10, max(ss) - min(ss))
+        for beat in self.beats:
+            if beat.beat_in_bar == 0:
+                alpha = 0.6
+            else:
+                alpha = 0.2
+            plt.plot([beat.time, beat.time], [min(ss) - 0.05 * beat_range, max(ss) + 0.05 * beat_range], c='gray',
+                     linewidth=1, zorder=1,
+                     alpha=alpha)
         plt.plot(xx, ss, c='k')
         plt.xlabel('time (second)')
         plt.ylabel('tempo (bpm)')
         plt.xlim(start_time, end_time)
-        plt.grid(True)
+        plt.ylim(min(ss) - 0.05 * beat_range, max(ss) + 0.05 * beat_range)
         if export_folder is not None:
             fig.savefig(os.path.join(export_folder, 'tempo.png'), bbox_inches='tight')
         else:
@@ -366,7 +432,7 @@ if __name__ == '__main__':
     # plot piano-roll
     mt.pianoroll()
     # test translate
-    res_notes, res_controls = mt.notes, mt.controls
+    res_notes, res_controls, res_beats = mt.notes, mt.controls, mt.beats
     # notes
     for note_ch, notes in res_notes.items():
         print(f'--CHANNEL[{note_ch}]--')
@@ -389,3 +455,11 @@ if __name__ == '__main__':
                       f'START:{round(c.start, 3)}\t'
                       f'END:{round(c.end, 3)}\t'
                       f'DURATION:{round(c.duration, 3)}')
+    # beats
+    print('-' * 80)
+    for b in res_beats:
+        print(f'BAR:{b.bar}\t'
+              f'BEAT_IN_BAR:{b.beat_in_bar}\t'
+              f'TEMPO:{b.numerator}/{b.denominator}\t'
+              f'TICK:{b.tick}\t'
+              f'TIME:{round(b.time, 3)}')
