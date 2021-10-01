@@ -55,7 +55,7 @@ class Beat(object):
 class MidiTranslate(object):
     """
     midi translate:
-        * convert midi file into `Note` object for audio synthesize
+        * convert midi file into objects for audio properties
         * plot piano-roll & tempo
     get more midi for demo:
         midi ref: https://github.com/RobertBoganKang/midi_files

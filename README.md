@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This project will translate midi file (`.mid`) into `Note`  and `Control` object, and can be used in other purposes.
+This project will translate midi file (`.mid`) into `Note` , `Control`  and `Beat` object, and can be used in other purposes.
 
 ## Requirement
 
@@ -83,6 +83,20 @@ Controls object extracted from `mt.controls` with format:
 * `tick_start`, `tick_end`, start and end tick of notes;
 * `duration`, duration of notes;
 * `ticks`, number of ticks of notes;
+
+`Beat` parameters:
+
+* `bar`, bar number of music;
+* `beat_in_bar`, the index of beat in the bar;
+* `numberator`, `denominator`, defines the tempo of music;
+* `tick`, the tick represent relative time;
+* `time`, time that beat starts;
+
+```python
+[
+    Beat_0, Beat_1, ...
+]
+```
 
 #### Apply Sustain Pedal
 
