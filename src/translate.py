@@ -68,7 +68,7 @@ class MidiTranslate(object):
         self.tpb = 0
         self.music_duration = 0
         self.total_ticks = 0
-        self.bar_count = -1
+        self.total_bars = -1
 
         # program params
         self.note_recipe = {}
@@ -200,9 +200,9 @@ class MidiTranslate(object):
         for t in range(last_tick, tick, last_tpb):
             beat_in_bar = i % last_numerator
             if beat_in_bar == 0:
-                self.bar_count += 1
+                self.total_bars += 1
             self.beats.append(
-                Beat(bar=self.bar_count, beat_in_bar=beat_in_bar,
+                Beat(bar=self.total_bars, beat_in_bar=beat_in_bar,
                      numerator=last_numerator, denominator=last_denominator, tick=t))
             # update
             i += 1
@@ -258,10 +258,11 @@ class MidiTranslate(object):
                     obj.update()
                 control_obj[ch][ctrl].sort(key=lambda x: x.start)
 
-    def update_beat_time(self):
+    def update_beat_time_and_bar(self):
         for beat in self.beats:
             tick = beat.tick
             beat.time = self.tick_to_second[tick]
+        self.total_bars += 1
 
     @staticmethod
     def combine_sustain(sustain_ctrl):
@@ -281,7 +282,7 @@ class MidiTranslate(object):
     def apply_sustain_pedal_to_notes(self):
         """ apply sustain pedal to the notes """
         for ch, ch_notes in self.notes.items():
-            if 64 not in self.controls:
+            if 64 not in self.controls[ch]:
                 break
             ch_control = self.combine_sustain(self.controls[ch][64])
             for i in range(len(ch_notes)):
@@ -325,7 +326,7 @@ class MidiTranslate(object):
         self.create_tempo_tick_to_second()
         self.update_notes_time()
         self.update_controls_time()
-        self.update_beat_time()
+        self.update_beat_time_and_bar()
 
     def pianoroll(self, start_time=None, end_time=None, export_folder=None):
         import matplotlib.pyplot as plt
@@ -424,9 +425,8 @@ class MidiTranslate(object):
                 alpha = 0.6
             else:
                 alpha = 0.2
-            plt.plot([beat.time, beat.time], [min(ss) - 0.05 * beat_range, max(ss) + 0.05 * beat_range], c='gray',
-                     linewidth=1, zorder=1,
-                     alpha=alpha)
+            plt.plot([beat.time, beat.time], [min(ss) - 0.05 * beat_range, max(ss) + 0.05 * beat_range],
+                     c='gray', linewidth=1, zorder=1, alpha=alpha)
         plt.plot(xx, ss, c='k')
         plt.xlabel('time (second)')
         plt.ylabel('tempo (bpm)')
@@ -443,12 +443,9 @@ if __name__ == '__main__':
     import sys
 
     mt = MidiTranslate(sys.argv[1])
-    # plot piano-roll
-    mt.pianoroll()
     # test translate
-    res_notes, res_controls, res_beats = mt.notes, mt.controls, mt.beats
     # notes
-    for note_ch, notes in res_notes.items():
+    for note_ch, notes in mt.notes.items():
         print(f'--CHANNEL[{note_ch}]--')
         for n in notes:
             print(f'PITCH:{str(n.pitch).rjust(3)}\t'
@@ -458,7 +455,7 @@ if __name__ == '__main__':
                   f'DURATION:{round(n.duration, 3)}')
     # controls
     print('-' * 80)
-    for control_ch, controls in res_controls.items():
+    for control_ch, controls in mt.controls.items():
         print(f'--CHANNEL[{control_ch}]--')
         for control_num in controls.keys():
             print(f'<{control_num}>')
@@ -471,9 +468,12 @@ if __name__ == '__main__':
                       f'DURATION:{round(c.duration, 3)}')
     # beats
     print('-' * 80)
-    for b in res_beats:
+    for b in mt.beats:
         print(f'BAR:{b.bar}\t'
               f'BEAT_IN_BAR:{b.beat_in_bar}\t'
               f'TEMPO:{b.numerator}/{b.denominator}\t'
               f'TICK:{b.tick}\t'
               f'TIME:{round(b.time, 3)}')
+
+    # plot piano-roll
+    mt.pianoroll()
