@@ -328,8 +328,7 @@ class MidiTranslate(object):
         self.update_controls_time()
         self.update_beat_time_and_bar()
 
-    def pianoroll(self, start_time=None, end_time=None, export_folder=None):
-        import matplotlib.pyplot as plt
+    def plot_pram_fix(self, start_time, end_time, export_folder):
         # check
         if not self.notes:
             print('WARNINT: empty track, cannot plot!')
@@ -344,10 +343,14 @@ class MidiTranslate(object):
         else:
             end_time = min(end_time, self.music_duration)
         assert start_time < end_time
-
-        # 1. plot notes
         if export_folder is not None:
             os.makedirs(export_folder, exist_ok=True)
+        return start_time, end_time, export_folder
+
+    def plot_pianoroll(self, start_time=None, end_time=None, export_folder=None):
+        """ plot notes """
+        import matplotlib.pyplot as plt
+        self.plot_pram_fix(start_time, end_time, export_folder)
         fig = plt.figure(figsize=self.pianoroll_figure_size)
         min_pitch = 1e3
         max_pitch = -1e3
@@ -412,7 +415,10 @@ class MidiTranslate(object):
             plt.show()
         plt.close()
 
-        # 2. plot tempo
+    def plot_tempo(self, start_time=None, end_time=None, export_folder=None):
+        """ plot tempo """
+        import matplotlib.pyplot as plt
+        self.plot_pram_fix(start_time, end_time, export_folder)
         fig = plt.figure(figsize=self.pianoroll_figure_size)
         ss = [self.delta_time_to_bpm(x) for x in self.delta_times]
         xx = []
@@ -476,4 +482,5 @@ if __name__ == '__main__':
               f'TIME:{round(b.time, 3)}')
 
     # plot piano-roll
-    mt.pianoroll()
+    mt.plot_pianoroll()
+    mt.plot_tempo()
