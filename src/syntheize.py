@@ -1,7 +1,8 @@
 import numpy as np
 import soundfile as sf
 
-from sound_library.piano_1 import SoundLibrary
+from sound_library.drum import Percussion
+from sound_library.piano_0 import SoundLibrary
 from sound_library.utils import ReverbExample, SoundCommon
 # https://github.com/RobertBoganKang/midi_translate
 from translate import MidiTranslate
@@ -24,10 +25,12 @@ class Synthesize(SoundCommon):
         # switch
         self.reverb_add = True
         self.nonlinear_add = False
+        self.beat_sound_mix = 0
 
         # system parameters
         self.rvb = None
         self.sound_library = SoundLibrary()
+        self.percussion = Percussion()
 
         # if False, prepare it manually
         # usage: could change parameters before sound libs preparation
@@ -37,6 +40,8 @@ class Synthesize(SoundCommon):
     def prepare_sound_library(self):
         """ prepare sound library (all samples) """
         self.sound_library.prepare_sound_library()
+        if self.beat_sound_mix > 0:
+            self.percussion.prepare_sound_library()
         if self.reverb_add:
             self.rvb = ReverbExample()
 
@@ -58,13 +63,25 @@ class Synthesize(SoundCommon):
         duration = mt.music_duration
         if self.piano_sustain:
             mt.apply_sustain_pedal_to_notes()
-        notes = mt.notes
         # create performance
         synthesized_audio = self.create_empty_track(duration + self.empty_track_end_buffer_time)
+        # patch notes
+        notes = mt.notes
         for ch, channel_notes in notes.items():
             for n in channel_notes:
                 sample = self.sound_library.get_sample(n.pitch, n.velocity, n.duration)
+                sample *= (1 - self.beat_sound_mix)
                 starting_sample = int(round(n.start * self.sample_rate))
+                synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
+        # patch beats
+        if self.beat_sound_mix > 0:
+            beats = mt.beats
+            for bt in beats:
+                beat_in_bar = bt.beat_in_bar
+                tempo_numerator = bt.numerator
+                sample = self.percussion.get_sample(beat_in_bar, tempo_numerator)
+                sample *= self.beat_sound_mix
+                starting_sample = int(round(bt.time * self.sample_rate))
                 synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
         # apply nonlinear
         if self.nonlinear_add:

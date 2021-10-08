@@ -1,3 +1,4 @@
+import fractions
 import random
 
 import numpy as np
@@ -13,6 +14,7 @@ class SoundCommon(object):
         self.random_sample_shift = 0.01
         self.nonlinear = 0.06
         self.highpass_freq = 20
+        self.beat_power_param = 1.3
 
     def key_to_frequency(self, key, shift=0):
         return self.a4_frequency * 2 ** ((key - 49) / 12 + shift / 1200)
@@ -56,6 +58,12 @@ class SoundCommon(object):
         nonlinear_array = np.transpose(nonlinear_array)
         nonlinear_array = self.norm_audio(nonlinear_array)
         return nonlinear_array
+
+    def percussion_velocity(self, beat_in_bar, tempo_numerator):
+        fr = fractions.Fraction(beat_in_bar, tempo_numerator)
+        den = fr.denominator
+        velocity = np.power(self.beat_power_param, -den)
+        return den, velocity
 
 
 class SpatialModeling(object):

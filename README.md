@@ -136,9 +136,10 @@ syn.synthesize(<path.mid>, <out_path.wav>)
 
 Some parameters could be changed for advanced functions.
 
-* `self.sample_rate`, change the audio sample rate;
+* `self.sample_rate`, change the audio sample rate (in `sound_library/utils.py::SoundCommon`);
 * `self.piano_sustain`, if `True`, sustain pedal will be added;
 * `self.reverb_add`, if `True`, reverberate effect will be add;
+* `self.beat_sound_mix`, if `>0`, synthesize will mix beat samples;
 
 #### Sound Library Change
 
