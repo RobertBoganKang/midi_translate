@@ -139,7 +139,7 @@ Some parameters could be changed for advanced functions.
 * `self.sample_rate`, change the audio sample rate (in `sound_library/utils.py::SoundCommon`);
 * `self.piano_sustain`, if `True`, sustain pedal will be added;
 * `self.reverb_add`, if `True`, reverberate effect will be add;
-* `self.beat_sound_mix`, if `>0`, synthesize will mix beat samples;
+* `self.beat_sound_mix`, if `>0`, synthesize will mix beat samples (range from `0` to `1`);
 
 #### Sound Library Change
 
