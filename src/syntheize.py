@@ -64,8 +64,9 @@ class Synthesize(SoundCommon):
         if self.piano_sustain:
             mt.apply_sustain_pedal_to_notes()
         # create performance
+        # (0) creat empty track
         synthesized_audio = self.create_empty_track(duration + self.empty_track_end_buffer_time)
-        # patch notes
+        # (1) patch notes
         if self.beat_sound_mix < 1:
             notes = mt.notes
             for ch, channel_notes in notes.items():
@@ -74,10 +75,11 @@ class Synthesize(SoundCommon):
                     sample *= (1 - self.beat_sound_mix)
                     starting_sample = int(round(n.start * self.sample_rate))
                     synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
-        # apply reverb
-        if self.reverb_add:
-            synthesized_audio = self.rvb.apply(synthesized_audio, self.sample_rate)
-        # patch beats
+            # (2) apply reverb
+            if self.reverb_add:
+                synthesized_audio = self.rvb.apply(synthesized_audio, self.sample_rate)
+            synthesized_audio = self.norm_audio(synthesized_audio)
+        # (3) patch beats
         if self.beat_sound_mix > 0:
             beats = mt.beats
             for bt in beats:
@@ -87,14 +89,15 @@ class Synthesize(SoundCommon):
                 sample *= self.beat_sound_mix
                 starting_sample = int(round(bt.time * self.sample_rate))
                 synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
-        # apply nonlinear
+        # (4) apply nonlinear
         if self.nonlinear_add:
             synthesized_audio = self.audio_nonlinear_transform(synthesized_audio, self.nonlinear)
+        # (5) audio post processing
         # norm audio
         synthesized_audio = self.norm_audio(synthesized_audio)
         # trim audio
         synthesized_audio = self.trim_end_audio(synthesized_audio)
-        # export
+        # (6) export audio
         if len(synthesized_audio) > 0:
             sf.write(out_path, synthesized_audio, samplerate=self.sample_rate)
         else:
