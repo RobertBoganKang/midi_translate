@@ -66,13 +66,14 @@ class Synthesize(SoundCommon):
         # create performance
         synthesized_audio = self.create_empty_track(duration + self.empty_track_end_buffer_time)
         # patch notes
-        notes = mt.notes
-        for ch, channel_notes in notes.items():
-            for n in channel_notes:
-                sample = self.sound_library.get_sample(n.pitch, n.velocity, n.duration)
-                sample *= (1 - self.beat_sound_mix)
-                starting_sample = int(round(n.start * self.sample_rate))
-                synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
+        if self.beat_sound_mix < 1:
+            notes = mt.notes
+            for ch, channel_notes in notes.items():
+                for n in channel_notes:
+                    sample = self.sound_library.get_sample(n.pitch, n.velocity, n.duration)
+                    sample *= (1 - self.beat_sound_mix)
+                    starting_sample = int(round(n.start * self.sample_rate))
+                    synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
         # apply reverb
         if self.reverb_add:
             synthesized_audio = self.rvb.apply(synthesized_audio, self.sample_rate)
