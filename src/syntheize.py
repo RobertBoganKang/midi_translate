@@ -17,12 +17,12 @@ class Synthesize(SoundCommon):
     def __init__(self, prepare_sound=True):
         # sound library
         super().__init__()
-        self.piano_sustain = True
         # for longer samples buffer
         self.empty_track_end_buffer_time = 1
         self.min_trim_energy = 1e-5
 
         # switch
+        self.piano_sustain = True
         self.reverb_add = True
         self.nonlinear_add = False
         self.beat_sound_mix = 0
@@ -73,6 +73,9 @@ class Synthesize(SoundCommon):
                 sample *= (1 - self.beat_sound_mix)
                 starting_sample = int(round(n.start * self.sample_rate))
                 synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
+        # apply reverb
+        if self.reverb_add:
+            synthesized_audio = self.rvb.apply(synthesized_audio, self.sample_rate)
         # patch beats
         if self.beat_sound_mix > 0:
             beats = mt.beats
@@ -86,11 +89,9 @@ class Synthesize(SoundCommon):
         # apply nonlinear
         if self.nonlinear_add:
             synthesized_audio = self.audio_nonlinear_transform(synthesized_audio, self.nonlinear)
-        # apply reverb
-        if self.reverb_add:
-            synthesized_audio = self.rvb.apply(synthesized_audio, self.sample_rate)
         # norm audio
         synthesized_audio = self.norm_audio(synthesized_audio)
+        # trim audio
         synthesized_audio = self.trim_end_audio(synthesized_audio)
         # export
         if len(synthesized_audio) > 0:

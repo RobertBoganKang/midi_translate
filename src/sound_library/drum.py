@@ -14,6 +14,7 @@ class Percussion(SoundCommon):
     """
     ref: https://www.youtube.com/watch?v=ogFAHvYatWs&t=254s
     """
+
     def __init__(self):
         super().__init__()
         # define ending caps
@@ -24,6 +25,9 @@ class Percussion(SoundCommon):
         self.sample_fix_ending = None
         self.percussion_sound_0 = None
         self.percussion_sound_1 = None
+
+        # spatial modeling
+        self.spatial_modeling = SpatialModeling()
 
     def prepare_sound_library(self):
         """ prepare sound library (all samples) """
@@ -50,11 +54,23 @@ class Percussion(SoundCommon):
         audio[-len(self.sample_fix_ending):] *= self.sample_fix_ending
         return audio
 
+    def apply_spatial_params_to_sample(self, sample, delta_time, sound_power_ratio):
+        num_samples = int(delta_time * self.sample_rate)
+        if delta_time < 0:
+            left_sample = sample * sound_power_ratio[0]
+            right_sample = np.array([0] * num_samples + list(sample)) * sound_power_ratio[1]
+        else:
+            left_sample = np.array([0] * num_samples + list(sample)) * sound_power_ratio[0]
+            right_sample = sample * sound_power_ratio[1]
+        return left_sample, right_sample
+
     def get_sample(self, beat_in_bar, tempo_numerator):
         den, velocity = self.percussion_velocity(beat_in_bar, tempo_numerator)
         if den == 1:
             sample = velocity * self.percussion_sound_0
         else:
             sample = velocity * self.percussion_sound_1
-        sample = np.transpose([sample, sample])
+        delta_time, sound_power_ratio = self.spatial_modeling.percussion_spatial_parameter(beat_in_bar)
+        left_sample, right_sample = self.apply_spatial_params_to_sample(sample, delta_time, sound_power_ratio)
+        sample = self.combine_stereo_sample(left_sample, right_sample)
         return sample

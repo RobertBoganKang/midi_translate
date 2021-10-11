@@ -174,9 +174,9 @@ class SoundLibrary(SoundCommon):
         release_head += np.clip(self.piano_note_release_volume_ratio * release_head_volume * self.sample_heading, None,
                                 1)
         struck_end = final_overtone_decay_volume[
-                   len(self.sample_heading):len(self.sample_heading) + len(sample_ending):]
+                     len(self.sample_heading):len(self.sample_heading) + len(sample_ending):]
         struck_end_volume = decay_volume[
-                          len(self.sample_heading):len(self.sample_heading) + len(sample_ending):]
+                            len(self.sample_heading):len(self.sample_heading) + len(sample_ending):]
         struck_end += np.clip(self.piano_note_struck_volume_ratio * struck_end_volume * sample_ending, None, 1)
         release_end = final_overtone_decay_volume[-len(sample_ending):]
         release_end_volume = decay_volume[-len(sample_ending):]
@@ -190,6 +190,8 @@ class SoundLibrary(SoundCommon):
         sample = self.norm_audio(sample) * decay_volume * velocity
         return sample
 
+
+
     def get_sample(self, key, velocity, note_duration):
         velocity /= 127
         # shift sample for phase variation
@@ -198,10 +200,10 @@ class SoundLibrary(SoundCommon):
         sample_length = int(round(note_duration * self.sample_rate) + len(sample_ending)
                             - self.piano_max_ending_sample_pre_time)
         sample_length = max(sample_length, len(self.sample_heading) + len(sample_ending))
-        delta_time, sound_power_ratio = self.spatial_modeling.get_parameter(key)
+        delta_time, sound_power_ratio = self.spatial_modeling.piano_spatial_parameter(key)
         left_sample = self.get_sample_single_mic(key, velocity, random_sample_shift_idx, sample_length,
                                                  sample_ending, delta_time, left_mic=True) * sound_power_ratio[0]
         right_sample = self.get_sample_single_mic(key, velocity, random_sample_shift_idx, sample_length,
                                                   sample_ending, delta_time, left_mic=True) * sound_power_ratio[1]
-        sample = np.transpose([left_sample, right_sample])
+        sample = self.combine_stereo_sample(left_sample, right_sample)
         return sample

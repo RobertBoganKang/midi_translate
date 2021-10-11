@@ -65,12 +65,26 @@ class SoundCommon(object):
         velocity = np.power(self.beat_power_param, -den)
         return den, velocity
 
+    @staticmethod
+    def combine_stereo_sample(left_sample, right_sample):
+        sample_length = min(len(left_sample), len(right_sample))
+        left_sample = left_sample[:sample_length]
+        right_sample = right_sample[:sample_length]
+        sample = np.transpose([left_sample, right_sample])
+        return sample
+
 
 class SpatialModeling(object):
     def __init__(self):
+        # piano
         self.mic_source_distance = 0.4
         self.source_width = 1.2
         self.mic_distance = 0.3
+
+        # ticks
+        self.mic_source_distance_percussion = 0.2
+        self.left_percussion_x = -1
+        self.right_percussion_x = 1
 
         # for sound speed
         self.environment_temperature = 20
@@ -82,13 +96,30 @@ class SpatialModeling(object):
     def spatial_key_to_x(self, key):
         return (key - 44) / 88 * self.source_width / 2
 
-    def get_parameter(self, key):
-        source_x = self.spatial_key_to_x(key)
-        left_mic_x = -self.mic_distance / 2
-        right_mic_x = self.mic_distance / 2
-        mic_y = self.mic_source_distance
-        left_source_mic_distance = np.sqrt(np.power(source_x - left_mic_x, 2) + np.power(mic_y, 2))
-        right_source_mic_distance = np.sqrt(np.power(source_x - right_mic_x, 2) + np.power(mic_y, 2))
+    def spatial_parameter(self, source_x, left_mic_x, right_mic_x, source_mic_y):
+        """
+        >> spatial model:
+                  ^ (y)
+                  |
+        ......@...*......
+                  |
+                  |
+        -----#----+----#------> (x)
+        * `(x)`, `(y)`: x/y axis;
+        * `+`: origin;
+        * `#`: mic object (left/right);
+        * `@`: source object;
+        * `@` to `*`: source_x;
+        * `#` to `+` or `+` to `#`: left_mic_x/right_mic_x;
+        * `#` to `*`: source_mic_y;
+        :param source_x: float, meter
+        :param left_mic_x: float, meter
+        :param right_mic_x: float, meter
+        :param source_mic_y: float, meter
+        :return: delta_time for sample, amplitude of sound
+        """
+        left_source_mic_distance = np.sqrt(np.power(source_x - left_mic_x, 2) + np.power(source_mic_y, 2))
+        right_source_mic_distance = np.sqrt(np.power(source_x - right_mic_x, 2) + np.power(source_mic_y, 2))
         sound_speed = self.calculate_sound_speed()
         delta_time = (left_source_mic_distance - right_source_mic_distance) / sound_speed
         if left_source_mic_distance < right_source_mic_distance:
@@ -96,6 +127,23 @@ class SpatialModeling(object):
         else:
             sound_power_ratio = [np.power(right_source_mic_distance / left_source_mic_distance, 2), 1]
         return delta_time, sound_power_ratio
+
+    def piano_spatial_parameter(self, key):
+        source_x = self.spatial_key_to_x(key)
+        left_mic_x = -self.mic_distance / 2
+        right_mic_x = self.mic_distance / 2
+        source_mic_y = self.mic_source_distance
+        return self.spatial_parameter(source_x, left_mic_x, right_mic_x, source_mic_y)
+
+    def percussion_spatial_parameter(self, tick_num):
+        left_mic_x = -self.mic_distance / 2
+        right_mic_x = self.mic_distance / 2
+        source_mic_y = self.mic_source_distance_percussion
+        if tick_num % 2 == 0:
+            source_x = self.left_percussion_x
+        else:
+            source_x = self.right_percussion_x
+        return self.spatial_parameter(source_x, left_mic_x, right_mic_x, source_mic_y)
 
 
 class ReverbExample(object):

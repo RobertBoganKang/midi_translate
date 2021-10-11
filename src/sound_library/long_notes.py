@@ -93,10 +93,10 @@ class SoundLibrary(SoundCommon):
         sample_ending = self.sample_fix_ending
         sample_length = int(round(note_duration * self.sample_rate))
         sample_length = max(sample_length, len(self.sample_heading) + len(sample_ending))
-        delta_time, sound_power_ratio = self.spatial_modeling.get_parameter(key)
+        delta_time, sound_power_ratio = self.spatial_modeling.piano_spatial_parameter(key)
         left_sample = self.get_sample_single_mic(key, velocity, random_sample_shift_idx, sample_length,
                                                  sample_ending, delta_time, left_mic=True) * sound_power_ratio[0]
         right_sample = self.get_sample_single_mic(key, velocity, random_sample_shift_idx, sample_length,
                                                   sample_ending, delta_time, left_mic=True) * sound_power_ratio[1]
-        sample = np.transpose([left_sample, right_sample])
+        sample = self.combine_stereo_sample(left_sample, right_sample)
         return sample
