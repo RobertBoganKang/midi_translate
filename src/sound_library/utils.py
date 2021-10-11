@@ -73,6 +73,16 @@ class SoundCommon(object):
         sample = np.transpose([left_sample, right_sample])
         return sample
 
+    def apply_spatial_params_to_mono_sample(self, sample, delta_time, sound_power_ratio):
+        num_samples = int(delta_time * self.sample_rate)
+        if delta_time < 0:
+            left_sample = sample * sound_power_ratio[0]
+            right_sample = np.array([0] * num_samples + list(sample)) * sound_power_ratio[1]
+        else:
+            left_sample = np.array([0] * num_samples + list(sample)) * sound_power_ratio[0]
+            right_sample = sample * sound_power_ratio[1]
+        return left_sample, right_sample
+
 
 class SpatialModeling(object):
     def __init__(self):
