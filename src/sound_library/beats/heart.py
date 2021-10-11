@@ -3,7 +3,7 @@ import sys
 
 import numpy as np
 
-sys.path.append(os.path.relpath(os.path.dirname(__file__)))
+sys.path.append(os.path.relpath(os.path.dirname(os.path.dirname(__file__))))
 try:
     from utils import SoundCommon, SpatialModeling
 except ImportError:

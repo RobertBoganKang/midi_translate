@@ -1,8 +1,8 @@
 import numpy as np
 import soundfile as sf
 
-from sound_library.drum import Percussion
-from sound_library.piano_0 import SoundLibrary
+from sound_library.beats.heart import Percussion
+from sound_library.notes.piano_0 import SoundLibrary
 from sound_library.utils import ReverbExample, SoundCommon
 # https://github.com/RobertBoganKang/midi_translate
 from translate import MidiTranslate
