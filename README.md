@@ -148,7 +148,7 @@ from sound_library.beats.<your_beats_library> import Percussion
 from sound_library.notes.<your_notes_library> import SoundLibrary
 ```
 
-Choose one sound library `<your_sound_library>`, then the sound will change.
+Choose one sound library `<your_{}_library>`, then the sound will change.
 
 There are several sound could choose:
 
