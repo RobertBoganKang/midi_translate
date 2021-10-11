@@ -14,7 +14,7 @@ class SoundCommon(object):
         self.random_sample_shift = 0.01
         self.nonlinear = 0.06
         self.highpass_freq = 20
-        self.beat_power_param = 1.3
+        self.beat_power_param = 1.5
 
     def key_to_frequency(self, key, shift=0):
         return self.a4_frequency * 2 ** ((key - 49) / 12 + shift / 1200)
@@ -92,9 +92,9 @@ class SpatialModeling(object):
         self.mic_distance = 0.3
 
         # ticks
-        self.mic_source_distance_percussion = 0.2
-        self.left_percussion_x = -1
-        self.right_percussion_x = 1
+        self.mic_source_distance_percussion = 0.15
+        self.left_percussion_x = -0.5
+        self.right_percussion_x = 0.5
 
         # for sound speed
         self.environment_temperature = 20
@@ -139,6 +139,7 @@ class SpatialModeling(object):
         return delta_time, sound_power_ratio
 
     def piano_spatial_parameter(self, key):
+        """ key from left to right """
         source_x = self.spatial_key_to_x(key)
         left_mic_x = -self.mic_distance / 2
         right_mic_x = self.mic_distance / 2
@@ -146,14 +147,21 @@ class SpatialModeling(object):
         return self.spatial_parameter(source_x, left_mic_x, right_mic_x, source_mic_y)
 
     def percussion_spatial_parameter(self, tick_num):
+        """
+        * main tick in the middle;
+        * remain ticks (sway): left -> right -> left ->...
+        """
         left_mic_x = -self.mic_distance / 2
         right_mic_x = self.mic_distance / 2
         source_mic_y = self.mic_source_distance_percussion
-        if tick_num % 2 == 0:
-            source_x = self.left_percussion_x
+        if tick_num == 0:
+            return 0, [1, 1]
         else:
-            source_x = self.right_percussion_x
-        return self.spatial_parameter(source_x, left_mic_x, right_mic_x, source_mic_y)
+            if (tick_num - 1) % 2 == 0:
+                source_x = self.left_percussion_x
+            else:
+                source_x = self.right_percussion_x
+            return self.spatial_parameter(source_x, left_mic_x, right_mic_x, source_mic_y)
 
 
 class ReverbExample(object):

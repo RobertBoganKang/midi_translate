@@ -20,6 +20,7 @@ class Percussion(SoundCommon):
         # define ending caps
         self.sample_fix_ending_time = 0.06
         self.max_note_duration = 1
+        self.clip_amplitude = 1
 
         # system parameters
         self.sample_fix_ending = None
@@ -44,13 +45,13 @@ class Percussion(SoundCommon):
 
     def create_sample_0(self):
         x = np.arange(0, self.max_note_duration, 1 / self.sample_rate)
-        audio = np.clip(1.5 * np.sin(2000 * np.exp(-15 * x) * x), -1, 1)
+        audio = np.clip(self.clip_amplitude * np.sin(2000 * np.exp(-15 * x) * x), -1, 1)
         audio[-len(self.sample_fix_ending):] *= self.sample_fix_ending
         return audio
 
     def create_sample_1(self):
         x = np.arange(0, self.max_note_duration, 1 / self.sample_rate)
-        audio = np.clip(1.5 * np.sin(4000 * np.exp(-25 * x) * x), -1, 1)
+        audio = np.clip(self.clip_amplitude * np.sin(6000 * np.exp(-25 * x) * x), -1, 1)
         audio[-len(self.sample_fix_ending):] *= self.sample_fix_ending
         return audio
 
