@@ -150,15 +150,19 @@ from sound_library.notes.<your_notes_library> import SoundLibrary
 
 Choose one sound library `<your_{}_library>`, then the sound will change.
 
-There are several sound could choose:
+Sound library choice:
 
 * long notes;
 * piano style 0;
 * piano style 1;
 
+Beat library choice:
+
+* heart;
+
 ### File `batch_synth.py`
 
-Apply `synthesize.py` in batch way.
+Apply `synthesize.py` in batch way (optional).
 
 ```bash
 python3 batch_synth.py -i <in_folder> -o <out_folder>
