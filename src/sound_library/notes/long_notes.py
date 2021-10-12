@@ -21,6 +21,8 @@ class SoundLibrary(SoundCommon):
         # sound effect
         self.high_velocity_type = 'triangle'
         self.high_velocity_square_power_param = 0.5
+        self.chorus_amplitude = 0.01
+        self.chorus_frequency = 12
 
         # bad temperment variations
         self.random_temperment = 0.2
@@ -55,7 +57,11 @@ class SoundLibrary(SoundCommon):
 
     def create_high_velocity_sample(self, key, random_shift):
         frequency = self.key_to_frequency(key, random_shift)
-        x = np.arange(0, self.max_note_duration, 1 / self.sample_rate)
+        # to avoid zero division
+        delta = 1e-3
+        x = np.arange(delta, self.max_note_duration + delta, 1 / self.sample_rate)
+        if self.chorus_amplitude != 0:
+            x = x * np.power(2, self.chorus_amplitude * np.sin(self.chorus_frequency * np.pi * x) / 10 / np.pi / x)
         if self.high_velocity_type == 'triangle':
             audio = np.abs(2 * np.mod(x * frequency * 2, 2) - 2) - 1
         elif self.high_velocity_type == 'square':
