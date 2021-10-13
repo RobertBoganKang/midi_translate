@@ -29,8 +29,8 @@ class Synthesize(SoundCommon):
 
         # system parameters
         self.rvb = None
-        self.sound_library = SoundLibrary()
-        self.percussion = Percussion()
+        self.note_library = SoundLibrary()
+        self.beat_library = Percussion()
 
         # if False, prepare it manually
         # usage: could change parameters before sound libs preparation
@@ -39,9 +39,9 @@ class Synthesize(SoundCommon):
 
     def prepare_sound_library(self):
         """ prepare sound library (all samples) """
-        self.sound_library.prepare_sound_library()
+        self.note_library.prepare_sound_library()
         if self.beat_sound_mix > 0:
-            self.percussion.prepare_sound_library()
+            self.beat_library.prepare_sound_library()
         if self.reverb_add:
             self.rvb = ReverbExample()
 
@@ -71,7 +71,7 @@ class Synthesize(SoundCommon):
             notes = mt.notes
             for ch, channel_notes in notes.items():
                 for n in channel_notes:
-                    sample = self.sound_library.get_sample(n.pitch, n.velocity, n.duration)
+                    sample = self.note_library.get_sample(n.pitch, n.velocity, n.duration)
                     sample *= (1 - self.beat_sound_mix)
                     starting_sample = int(round(n.start * self.sample_rate))
                     synthesized_audio[starting_sample:starting_sample + len(sample)] += sample
@@ -85,7 +85,7 @@ class Synthesize(SoundCommon):
             for bt in beats:
                 beat_in_bar = bt.beat_in_bar
                 tempo_numerator = bt.numerator
-                sample = self.percussion.get_sample(beat_in_bar, tempo_numerator)
+                sample = self.beat_library.get_sample(beat_in_bar, tempo_numerator)
                 sample *= self.beat_sound_mix
                 starting_sample = int(round(bt.time * self.sample_rate))
                 synthesized_audio[starting_sample:starting_sample + len(sample)] += sample

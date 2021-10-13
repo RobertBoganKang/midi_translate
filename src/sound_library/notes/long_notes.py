@@ -21,7 +21,7 @@ class SoundLibrary(SoundCommon):
         # sound effect
         self.high_velocity_type = 'triangle'
         self.high_velocity_square_power_param = 0.5
-        self.chorus_amplitude = 0.01
+        self.chorus_amplitude = 0.015
         self.chorus_frequency = 12
         self.chorus_start_power_param_1 = 6
         self.chorus_start_power_param_2 = 3
