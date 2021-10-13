@@ -21,7 +21,7 @@ class SoundLibrary(SoundCommon):
         # sound effect
         self.high_velocity_type = 'triangle'
         self.high_velocity_square_power_param = 0.5
-        self.chorus_amplitude = 0.015
+        self.chorus_amplitude_in_cent = 18
         self.chorus_frequency = 12
         self.chorus_start_power_param_1 = 6
         self.chorus_start_power_param_2 = 3
@@ -62,11 +62,11 @@ class SoundLibrary(SoundCommon):
         # to avoid zero division
         delta = 1e-6
         x = np.arange(delta, self.max_note_duration + delta, 1 / self.sample_rate)
-        if self.chorus_amplitude != 0:
+        if self.chorus_amplitude_in_cent != 0:
             x = x * np.power(2,
                              (1 - np.power(self.chorus_start_power_param_1,
                                            -np.power(x, self.chorus_start_power_param_2))) *
-                             self.chorus_amplitude * np.sin(
+                             (self.chorus_amplitude_in_cent / 1200) * np.sin(
                                  self.chorus_frequency * np.pi * x) / self.chorus_frequency / np.pi / x)
         if self.high_velocity_type == 'triangle':
             audio = np.abs(2 * np.mod(x * frequency * 2, 2) - 2) - 1
