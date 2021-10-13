@@ -347,10 +347,18 @@ class MidiTranslate(object):
             os.makedirs(export_folder, exist_ok=True)
         return start_time, end_time, export_folder
 
+    @staticmethod
+    def check_time_range(plot_start, plot_end, event_start, event_end):
+        return event_end >= plot_start or event_start <= plot_end
+
+    @staticmethod
+    def check_time_point(plot_start, plot_end, event_point):
+        return plot_start <= event_point <= plot_end
+
     def plot_pianoroll(self, start_time=None, end_time=None, export_folder=None):
         """ plot notes """
         import matplotlib.pyplot as plt
-        self.plot_pram_fix(start_time, end_time, export_folder)
+        start_time, end_time, export_folder = self.plot_pram_fix(start_time, end_time, export_folder)
         fig = plt.figure(figsize=self.pianoroll_figure_size)
         min_pitch = 1e3
         max_pitch = -1e3
@@ -363,19 +371,25 @@ class MidiTranslate(object):
                 if obj.value != 0 and obj.control == 64:
                     start = obj.start
                     end = obj.end
+                    # check range
+                    if not self.check_time_range(start_time, end_time, start, end):
+                        continue
                     # sustain pedal region
                     plt.fill([start, end, end, start], [0, 0, 89, 89], facecolor='k', alpha=0.1,
                              zorder=2)
-            # plot notes lines
+            # plot notes bars
             color = self.default_color[ch % len(self.default_color)]
             for key in range(len(self.notes[ch])):
                 obj = self.notes[ch][key]
+                start = obj.start
+                end = obj.end
+                # check range
+                if not self.check_time_range(start_time, end_time, start, end):
+                    continue
                 pitch = obj.pitch
                 velocity = obj.velocity / 127
                 min_pitch = min(pitch, min_pitch)
                 max_pitch = max(pitch, max_pitch)
-                start = obj.start
-                end = obj.end
                 # notes
                 plt.fill([start, end, end, start], [pitch - 0.5, pitch - 0.5, pitch + 0.5, pitch + 0.5],
                          facecolor=color, edgecolor=color,
@@ -399,7 +413,11 @@ class MidiTranslate(object):
                 alpha = 0.6
             else:
                 alpha = 0.2
-            plt.plot([beat.time, beat.time], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=1, zorder=1,
+            beat_time = beat.time
+            # check range
+            if not self.check_time_point(start_time, end_time, beat_time):
+                continue
+            plt.plot([beat_time, beat_time], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=1, zorder=1,
                      alpha=alpha)
         # start end edge
         plt.plot([0, 0], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=3, zorder=3)
@@ -418,12 +436,17 @@ class MidiTranslate(object):
     def plot_tempo(self, start_time=None, end_time=None, export_folder=None):
         """ plot tempo """
         import matplotlib.pyplot as plt
-        self.plot_pram_fix(start_time, end_time, export_folder)
+        start_time, end_time, export_folder = self.plot_pram_fix(start_time, end_time, export_folder)
         fig = plt.figure(figsize=self.pianoroll_figure_size)
-        ss = [self.delta_time_to_bpm(x) for x in self.delta_times]
+        ss = []
         xx = []
-        for key in range(len(self.delta_times)):
-            xx.append(self.tick_to_second[key])
+        for i in range(len(self.delta_times)):
+            time_point = self.tick_to_second[i]
+            # check range
+            if not self.check_time_point(start_time, end_time, time_point):
+                continue
+            xx.append(time_point)
+            ss.append(self.delta_time_to_bpm(self.delta_times[i]))
         # plot bar and beats
         beat_range = max(10, max(ss) - min(ss))
         for beat in self.beats:
@@ -431,7 +454,11 @@ class MidiTranslate(object):
                 alpha = 0.6
             else:
                 alpha = 0.2
-            plt.plot([beat.time, beat.time], [min(ss) - 0.05 * beat_range, max(ss) + 0.05 * beat_range],
+            beat_time = beat.time
+            # check range
+            if not self.check_time_point(start_time, end_time, beat_time):
+                continue
+            plt.plot([beat_time, beat_time], [min(ss) - 0.05 * beat_range, max(ss) + 0.05 * beat_range],
                      c='gray', linewidth=1, zorder=1, alpha=alpha)
         plt.plot(xx, ss, c='k')
         plt.xlabel('time (second)')
