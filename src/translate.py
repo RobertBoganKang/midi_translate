@@ -355,6 +355,16 @@ class MidiTranslate(object):
     def check_time_point(plot_start, plot_end, event_point):
         return plot_start <= event_point <= plot_end
 
+    def get_beat_params(self, beat, start_time, end_time):
+        if beat.beat_in_bar == 0:
+            alpha = 0.6
+        else:
+            alpha = 0.2
+        # check range
+        if not self.check_time_point(start_time, end_time, beat.time):
+            return None
+        return alpha
+
     def plot_pianoroll(self, start_time=None, end_time=None, export_folder=None):
         """ plot notes """
         import matplotlib.pyplot as plt
@@ -409,15 +419,10 @@ class MidiTranslate(object):
             plt.plot([0, self.music_duration], [key - 0.5, key - 0.5], c='lightgray', linewidth=0.5, zorder=1)
         # plot bar and beats
         for beat in self.beats:
-            if beat.beat_in_bar == 0:
-                alpha = 0.6
-            else:
-                alpha = 0.2
-            beat_time = beat.time
-            # check range
-            if not self.check_time_point(start_time, end_time, beat_time):
+            alpha = self.get_beat_params(beat, start_time, end_time)
+            if alpha is None:
                 continue
-            plt.plot([beat_time, beat_time], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=1, zorder=1,
+            plt.plot([beat.time, beat.time], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=1, zorder=1,
                      alpha=alpha)
         # start end edge
         plt.plot([0, 0], [min_pitch - 1, max_pitch + 1], c='gray', linewidth=3, zorder=3)
@@ -450,15 +455,10 @@ class MidiTranslate(object):
         # plot bar and beats
         beat_range = max(10, max(ss) - min(ss))
         for beat in self.beats:
-            if beat.beat_in_bar == 0:
-                alpha = 0.6
-            else:
-                alpha = 0.2
-            beat_time = beat.time
-            # check range
-            if not self.check_time_point(start_time, end_time, beat_time):
+            alpha = self.get_beat_params(beat, start_time, end_time)
+            if alpha is None:
                 continue
-            plt.plot([beat_time, beat_time], [min(ss) - 0.05 * beat_range, max(ss) + 0.05 * beat_range],
+            plt.plot([beat.time, beat.time], [min(ss) - 0.05 * beat_range, max(ss) + 0.05 * beat_range],
                      c='gray', linewidth=1, zorder=1, alpha=alpha)
         plt.plot(xx, ss, c='k')
         plt.xlabel('time (second)')
