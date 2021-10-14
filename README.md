@@ -65,8 +65,8 @@ Controls object extracted from `mt.controls` with format:
 ```python
 {
     <channel_0>: {
-        <control_number_0>: {Control_00, ...},
-        <control_number_1>: {Control_10, ...},
+        <control_number_0>: [Control_00, ...],
+        <control_number_1>: [Control_10, ...],
         ...
     },
     <channel_1>: {...}
