@@ -11,7 +11,7 @@ except ImportError:
     raise 'ERROR: cannot import!'
 
 
-class SoundLibrary(SoundCommon):
+class NoteLibrary(SoundCommon):
     def __init__(self):
         super().__init__()
         # define heading/ending caps

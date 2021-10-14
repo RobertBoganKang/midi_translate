@@ -1,8 +1,8 @@
 import numpy as np
 import soundfile as sf
 
-from sound_library.beats.heart import Percussion
-from sound_library.notes.piano_0 import SoundLibrary
+from sound_library.beats.heart import BeatLibrary
+from sound_library.notes.piano_0 import NoteLibrary
 from sound_library.utils import ReverbExample, SoundCommon
 # https://github.com/RobertBoganKang/midi_translate
 from translate import MidiTranslate
@@ -29,8 +29,8 @@ class Synthesize(SoundCommon):
 
         # system parameters
         self.rvb = None
-        self.note_library = SoundLibrary()
-        self.beat_library = Percussion()
+        self.note_library = NoteLibrary()
+        self.beat_library = BeatLibrary()
 
         # if False, prepare it manually
         # usage: could change parameters before sound libs preparation

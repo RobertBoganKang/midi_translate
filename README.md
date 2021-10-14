@@ -86,6 +86,12 @@ Controls object extracted from `mt.controls` with format:
 
 Beats object extracted from `mt.beats` with format:
 
+```python
+[
+    Beat_0, Beat_1, ...
+]
+```
+
 `Beat` parameters:
 
 * `bar`, bar number of music;
@@ -94,29 +100,24 @@ Beats object extracted from `mt.beats` with format:
 * `tick`, the tick represent relative time;
 * `time`, time that beat starts;
 
-```python
-[
-    Beat_0, Beat_1, ...
-]
-```
-
 #### Apply Sustain Pedal
 
 ```python
 mt.apply_sustain_pedal_to_notes()
 ```
 
-#### Piano Roll
+#### Piano Roll & Tempo
 
-Plot piano-roll, the piano roll and tempo will be shown.
+Plot the piano-roll and tempo:
 
 ```python
-mt.pianoroll(<start_time>, <end_time>, <export_folder>)
+mt.plot_pianoroll(<start_time>, <end_time>, <export_folder>)
+mt.plot_tempo(<start_time>, <end_time>, <export_folder>)
 ```
 
-The parameter `start_time` and `end_time` can be none (not given).
+The parameter `start_time` and `end_time` can be none (not given) for full range plot.
 
-If `export_folder` not given, the program will plot directly.
+If `export_folder` not given, the program will plot directly, not save pictures into this folder.
 
 ### File `synthesize.py`
 
@@ -146,21 +147,21 @@ Some parameters could be changed for advanced functions.
 #### Sound Library Change
 
 ```python
-from sound_library.beats.<your_beats_library> import Percussion
-from sound_library.notes.<your_notes_library> import SoundLibrary
+from sound_library.beats.<your_beats_library> import BeatLibrary
+from sound_library.notes.<your_notes_library> import NoteLibrary
 ```
 
 Choose one sound library `<your_{}_library>`, then the sound will change.
 
-Sound library choice:
+Note library choice:
 
-* long notes;
-* piano style 0;
-* piano style 1;
+* `long_notes`;
+* `piano_0`;
+* `piano_1`;
 
 Beat library choice:
 
-* heart;
+* `heart`;
 
 ### File `batch_synth.py`
 

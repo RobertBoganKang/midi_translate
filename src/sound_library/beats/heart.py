@@ -10,7 +10,7 @@ except ImportError:
     raise 'ERROR: cannot import!'
 
 
-class Percussion(SoundCommon):
+class BeatLibrary(SoundCommon):
     """
     ref: https://www.youtube.com/watch?v=ogFAHvYatWs&t=254s
     """
