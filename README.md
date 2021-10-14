@@ -44,8 +44,8 @@ Notes object extracted from `mt.notes` with format:
 
 ```python
 {
-    <channel_0>: [Note_00, Note_01...],
-    <channel_1>: [Note_10...],
+    <channel_0>: [Note_00, Note_01, ...],
+    <channel_1>: [Note_10, ...],
     ...
 }
 ```
