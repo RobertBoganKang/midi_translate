@@ -84,6 +84,8 @@ Controls object extracted from `mt.controls` with format:
 * `duration`, duration of notes;
 * `ticks`, number of ticks of notes;
 
+Beats object extracted from `mt.beats` with format:
+
 `Beat` parameters:
 
 * `bar`, bar number of music;
