@@ -281,6 +281,9 @@ class MidiTranslate(object):
 
     def apply_sustain_pedal_to_notes(self):
         """ apply sustain pedal to the notes """
+        # if empty controls
+        if len(self.controls) == 0:
+            return
         for ch, ch_notes in self.notes.items():
             if 64 not in self.controls[ch]:
                 break
